@@ -36,10 +36,10 @@ def main(
 
     os.environ['HF_HOME'] = hf_path
 
-    print(f'GPU enabled?             : {torch.cuda.is_available()}')
-    print(f'Embedding range          : {years}, {months}')
-    print(f'Saving embeddings to path: {embed_path}')
-    print(f'Saving metadata to path  : {meta_path}\n')
+    print(f'GPU enabled?              : {torch.cuda.is_available()}')
+    print(f'Embedding range           : {years}, {months}')
+    print(f'Saving embeddings to path : {embed_path}')
+    print(f'Saving metadata to path   : {meta_path}\n')
     print(f'Loading model ... ({time.time()-t0:.2f})')
 
     model = SentenceTransformer(hf_model,
@@ -54,7 +54,7 @@ def main(
         print(f'Processing {year}-{month} ... ({time.time()-t0:.2f})')
 
         # path to bz2 compressed file
-        file_path = f'{data_path}RC_{year}-{month}.bz2'
+        file_path = os.path.join(data_path, f'RC_{year}-{month}.bz2')
 
         # initialize an array to store embeddings
         embeddings = []
