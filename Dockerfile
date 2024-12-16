@@ -2,13 +2,11 @@ FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
 # Install Python 3.12
 RUN apt-get update && \
-    apt-get install -y python3.12 python3.12-dev
+    apt-get install -y python3.10 python3.10-dev python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set default Python version
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
-
-# Install pip
-RUN apt-get install -y python3-pip
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 # Upgrade pip
 RUN python -m pip install --upgrade pip
