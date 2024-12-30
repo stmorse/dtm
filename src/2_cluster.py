@@ -75,13 +75,13 @@ def train_cluster_model(
                 del leftovers
                 gc.collect()
 
-            # save model
-            model_name = f'mbkm_{n_clusters}_{year}-{month}.pkl'
+            # save model (folder name captures type/n_clusters)
+            model_name = f'model_{year}-{month}.pkl'
             with open(os.path.join(model_path, model_name), 'wb') as f:
                 joblib.dump(model, f)
 
             # save just cluster centroids (for joblib incompatibility)
-            cc_name = f'mbkm_{n_clusters}_cc_{year}-{month}.pkl'
+            cc_name = f'model_cc_{year}-{month}.pkl'
             with open(os.path.join(model_path, cc_name), 'wb') as f:
                 np.savez_compressed(f, cc=model.cluster_centers_, allow_pickle=False)
 
@@ -132,27 +132,14 @@ if __name__=="__main__":
     config.read('../config.ini')
     c = config['cluster']
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n-clusters', type=int, default=c['n_clusters'])
-    parser.add_argument('--start-year', type=int, default=c['start_year'])
-    parser.add_argument('--end-year', type=int, default=c['end_year'])
-    parser.add_argument('--start-month', type=int, default=c['start_month'])
-    parser.add_argument('--end-month', type=int, default=c['end_month'])
-    parser.add_argument('--chunk-size', type=int, default=c['chunk_size'])
-    parser.add_argument('--embed-path', type=str, default=c['embed_subpath'])
-    parser.add_argument('--label-path', type=str, default=c['label_subpath'])
-    parser.add_argument('--model-path', type=str, default=c['model_subpath'])
-    
-    args = parser.parse_args()
-
     train_cluster_model(
-        embed_path=os.path.join(config['general']['save_path'], args.embed_path),
-        label_path=os.path.join(config['general']['save_path'], args.label_path),
-        model_path=os.path.join(config['general']['save_path'], args.model_path),
-        n_clusters=args.n_clusters,
-        start_year=args.start_year,
-        end_year=args.end_year,
-        start_month=args.start_month,
-        end_month=args.end_month,
-        chunk_size=args.chunk_size,
+        embed_path=os.path.join(config['general']['save_path'], c['embed_subpath']),
+        label_path=os.path.join(config['general']['save_path'], c['label_subpath']),
+        model_path=os.path.join(config['general']['save_path'], c['model_subpath']),
+        n_clusters=int(c['n_clusters']),
+        start_year=int(c['start_year']),
+        end_year=int(c['end_year']),
+        start_month=int(c['start_month']),
+        end_month=int(c['end_month']),
+        chunk_size=int(c['chunk_size']),
     )
