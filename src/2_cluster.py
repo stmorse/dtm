@@ -77,12 +77,12 @@ def train_cluster_model(
 
             # save model
             model_name = f'mbkm_{n_clusters}_{year}-{month}.pkl'
-            with open(os.path.join(os.path.dirname(model_path), model_name), 'wb') as f:
+            with open(os.path.join(model_path, model_name), 'wb') as f:
                 joblib.dump(model, f)
 
             # save just cluster centroids (for joblib incompatibility)
             cc_name = f'mbkm_{n_clusters}_cc_{year}-{month}.pkl'
-            with open(os.path.join(os.path.dirname(model_path), cc_name), 'wb') as f:
+            with open(os.path.join(model_path, cc_name), 'wb') as f:
                 np.savez_compressed(f, cc=model.cluster_centers_, allow_pickle=False)
 
             print(f'Cluster model saved to {model_path} ({time.time()-t0:.2f})')
@@ -118,7 +118,7 @@ def train_cluster_model(
             # Save labels
             print(f'> Saving labels ... ({time.time()-t0:.2f})')
             label_name = f'labels_{year}-{month}.npz'
-            with open(os.path.join(os.path.dirname(label_path), label_name), 'wb') as f:
+            with open(os.path.join(label_path, label_name), 'wb') as f:
                 np.savez_compressed(f, labels=labels, allow_pickle=False)
 
             del embeddings
@@ -138,10 +138,10 @@ if __name__=="__main__":
     parser.add_argument('--end-year', type=int, default=c['end_year'])
     parser.add_argument('--start-month', type=int, default=c['start_month'])
     parser.add_argument('--end-month', type=int, default=c['end_month'])
-    parser.add_argument('--chunk-size', type=int, default=c['batch_size'])
+    parser.add_argument('--chunk-size', type=int, default=c['chunk_size'])
     parser.add_argument('--embed-path', type=str, default=c['embed_subpath'])
     parser.add_argument('--label-path', type=str, default=c['label_subpath'])
-    parser.add_argument('--model-path', type=bool, default=c['model_subpath'])
+    parser.add_argument('--model-path', type=str, default=c['model_subpath'])
     
     args = parser.parse_args()
 
