@@ -81,9 +81,9 @@ def train_cluster_model(
                 joblib.dump(model, f)
 
             # save just cluster centroids (for joblib incompatibility)
-            cc_name = f'model_cc_{year}-{month}.pkl'
+            cc_name = f'model_cc_{year}-{month}.npz'
             with open(os.path.join(model_path, cc_name), 'wb') as f:
-                np.savez_compressed(f, cc=model.cluster_centers_, allow_pickle=False)
+                np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
 
             print(f'Cluster model saved to {model_path} ({time.time()-t0:.2f})')
 
