@@ -2,6 +2,14 @@
 Loads clusters labels and sentences
 Trains tfidf on every cluster
 Saves to file
+{
+    year:
+    month: 
+    tfidf:
+    {cluster #: 
+        {
+            sample_indices: [], (top_k)
+            keywords: [],       (top_m)
 """
 
 import configparser
@@ -42,15 +50,7 @@ def train_tfidf(
     top_m = 10
 
     # each month structured as:
-    # {
-    #   year:
-    #   month: 
-    #   tfidf:
-    #       {cluster #: 
-    #           {
-    #               sample_indices: [], (top_k)
-    #               keywords: [],       (top_m)
-    #           }}}}
+    # 
 
     for year in years:
         print(f'\nProcessing {year} ... ({time.time()-t0:.3f})')
