@@ -22,6 +22,7 @@ spec:
         - '-c'
         - |
           echo "Running container..."   # pod is for dev'ing scripts, run indef
+          cd /sciclone/geograd/stmorse/dtm
           sleep infinity
       env:
         - name: HF_HOME
