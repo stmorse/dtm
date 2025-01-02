@@ -47,7 +47,7 @@ def train_tfidf(
     top_k = 100
 
     # number of keywords to store
-    top_m = 10
+    top_m = 20
 
     # each month structured as:
     # 
@@ -125,6 +125,10 @@ def train_tfidf(
             output = {
                 'year': year,
                 'month': month,
+                'full': {
+                    'scores': X,
+                    'feature_names': vectorizer.get_feature_names_out()
+                },
                 'tfidf': {
                     i: {
                         'sample_indices': closest_idx[i,:],
