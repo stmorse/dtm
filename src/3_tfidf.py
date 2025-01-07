@@ -2,14 +2,21 @@
 Loads clusters labels and sentences
 Trains tfidf on every cluster
 Saves to file
-{
-    year:
-    month: 
-    tfidf:
-    {cluster #: 
-        {
-            sample_indices: [], (top_k)
-            keywords: [],       (top_m)
+
+output = {
+    'year': year,
+    'month': month,
+    'full': {
+        'scores': np.ndarray (TfidfVectorizer result),
+        'feature_names': vectorizer.get_feature_names_out()
+    },
+    'tfidf': {
+        i: {
+            'sample_indices': closest_idx[i,:],
+            'keywords': keywords[i],
+        } for i in range(num_clusters)
+    }
+}
 """
 
 import configparser
@@ -33,6 +40,9 @@ def train_tfidf(
     end_year: int,
     start_month: int,
     end_month: int,
+    top_k: int,         # num sentences closest to centroid to use
+    top_m: int,         # num keywords to store
+    max_df: float,      # max doc freq threshold for tfidf to include term
 ):
     t0 = time.time()
     years = [str(y) for y in range(start_year, end_year+1)]
@@ -41,16 +51,6 @@ def train_tfidf(
     print(f'CPU count                 : {os.cpu_count()}')
     print(f'tf-idf range              : {years}, {months}')
     print(f'Saving tf-idf to path     : {tfidf_path}\n')
-
-    # number of embeddings/sentences closest to centroid
-    # more allows a better tf-idf estimate of keywords
-    top_k = 100
-
-    # number of keywords to store
-    top_m = 20
-
-    # each month structured as:
-    # 
 
     for year in years:
         print(f'\nProcessing {year} ... ({time.time()-t0:.3f})')
@@ -106,7 +106,7 @@ def train_tfidf(
             print(f'   Computing tf-idf ... ({time.time()-t0:.3f})')
             vectorizer = TfidfVectorizer(
                 input='content',
-                max_df=0.3,
+                max_df=max_df,
                 # max_features=100,  # this seems to get rid of weird/rare words
                 use_idf=True,
                 smooth_idf=True
@@ -154,16 +154,20 @@ def train_tfidf(
 if __name__=='__main__':
     config = configparser.ConfigParser()
     config.read('../config.ini')
+    g = config['general']
     c = config['tfidf']
 
     train_tfidf(
         data_path=config['general']['data_path'],
-        embed_path=os.path.join(config['general']['save_path'], c['embed_subpath']),
-        model_path=os.path.join(config['general']['save_path'], c['model_subpath']),
-        label_path=os.path.join(config['general']['save_path'], c['label_subpath']),
-        tfidf_path=os.path.join(config['general']['save_path'], c['tfidf_subpath']),
-        start_year=int(c['start_year']),
-        end_year=int(c['end_year']),
-        start_month=int(c['start_month']),
-        end_month=int(c['end_month']),
+        embed_path=os.path.join(g['save_path'], g['embed_subpath']),
+        model_path=os.path.join(g['save_path'], g['run_subpath'], 'models'),
+        label_path=os.path.join(g['save_path'], g['run_subpath'], 'labels'),
+        tfidf_path=os.path.join(g['save_path'], g['run_subpath'], 'tfidf'),
+        start_year=int(g['start_year']),
+        end_year=int(g['end_year']),
+        start_month=int(g['start_month']),
+        end_month=int(g['end_month']),
+        top_k=int(c['top_k']),
+        top_m=int(c['top_m']),
+        max_df=float(c['max_df']),
     )
