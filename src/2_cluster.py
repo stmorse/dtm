@@ -228,14 +228,13 @@ if __name__=="__main__":
     config = configparser.ConfigParser()
     config.read('../config.ini')
     g = config['general']
-    c = config['cluster']
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--subpath', type=str, required=True)
-    parser.add_argument('--start_year', type=int, required=True)
-    parser.add_argument('--end_year', type=int, required=True)
-    parser.add_argument('--start_month', type=int, required=True)
-    parser.add_argument('--end_month', type=int, required=True)
+    parser.add_argument('--start-year', type=int, required=True)
+    parser.add_argument('--end-year', type=int, required=True)
+    parser.add_argument('--start-month', type=int, required=True)
+    parser.add_argument('--end-month', type=int, required=True)
     parser.add_argument('--n-clusters', type=int, required=True)
     parser.add_argument('--chunk-size', type=int, required=True)
     parser.add_argument('--top-k', type=int, required=True)
@@ -243,12 +242,18 @@ if __name__=="__main__":
     parser.add_argument('--max-df', type=float, required=True)
     args = parser.parse_args()
 
+    subpath = os.path.join(g['save_path'], args.subpath)
+    
+    for subdir in ['labels', 'models', 'tfidf']:
+        if not os.path.exists(os.path.join(subpath, subdir)):
+            os.makedirs(os.path.join(subpath, subdir))
+    
     train_cluster_model(
         data_path=g['data_path'],
         embed_path=g['embed_path'],
-        label_path=os.path.join(args.subpath, 'labels'),
-        model_path=os.path.join(args.subpath, 'models'),
-        tfidf_path=os.path.join(args.subpath, 'tfidf'),
+        label_path=os.path.join(subpath, 'labels'),
+        model_path=os.path.join(subpath, 'models'),
+        tfidf_path=os.path.join(subpath, 'tfidf'),
         n_clusters=args.n_clusters,
         start_year=args.start_year,
         end_year=args.end_year,

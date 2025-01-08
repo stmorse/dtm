@@ -25,7 +25,18 @@ spec:
         - |
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
-          python -u 2_cluster.py > ../logs/cluster_out.log
+          python -u 2_cluster.py \
+            --subpath mbkm_50 \
+            --start-year 2013 \
+            --end-year 2014 \
+            --start-month 1 \
+            --end-month 12 \
+            --n-clusters 50 \
+            --chunk-size 1000000 \
+            --top-k 100 \
+            --top-m 20 \
+            --max-df 0.3 \
+            > ../logs/cluster_out.log
           sleep infinity
       # env:
       #   - name: HF_HOME
