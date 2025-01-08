@@ -23,6 +23,7 @@ output = {
 }
 """
 
+import argparse
 import bz2
 import configparser
 import gc
@@ -229,19 +230,32 @@ if __name__=="__main__":
     g = config['general']
     c = config['cluster']
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--start_year', type=int, required=True)
+    parser.add_argument('--end_year', type=int, required=True)
+    parser.add_argument('--start_month', type=int, required=True)
+    parser.add_argument('--end_month', type=int, required=True)
+    parser.add_argument('--n-clusters', type=int, required=True)
+    parser.add_argument('--chunk-size', type=int, required=True)
+    parser.add_argument('--top-k', type=int, required=True)
+    parser.add_argument('--top-m', type=int, required=True)
+    parser.add_argument('--max-df', type=float, required=True)
+    args = parser.parse_args()
+
     train_cluster_model(
-        data_path=config['general']['data_path'],
-        embed_path=os.path.join(g['save_path'], g['embed_subpath']),
-        label_path=os.path.join(g['save_path'], g['run_subpath'], 'labels'),
-        model_path=os.path.join(g['save_path'], g['run_subpath'], 'models'),
-        tfidf_path=os.path.join(g['save_path'], g['run_subpath'], 'tfidf'),
-        n_clusters=int(g['n_clusters']),
-        start_year=int(g['start_year']),
-        end_year=int(g['end_year']),
-        start_month=int(g['start_month']),
-        end_month=int(g['end_month']),
-        chunk_size=int(c['chunk_size']),
-        top_k=int(c['top_k']),
-        top_m=int(c['top_m']),
-        max_df=float(c['max_df'])
+        data_path=g['data_path'],
+        embed_path=g['embed_path'],
+        label_path=os.path.join(args.subpath, 'labels'),
+        model_path=os.path.join(args.subpath, 'models'),
+        tfidf_path=os.path.join(args.subpath, 'tfidf'),
+        n_clusters=args.n_clusters,
+        start_year=args.start_year,
+        end_year=args.end_year,
+        start_month=args.start_month,
+        end_month=args.end_month,
+        chunk_size=args.chunk_size,
+        top_k=args.top_k,
+        top_m=args.top_m,
+        max_df=args.max_df
     )
