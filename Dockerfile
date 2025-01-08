@@ -18,7 +18,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Set a working directory
-WORKDIR /app
+WORKDIR /
 
 # Default command (optional, can be overridden by kubectl or docker run)
 CMD ["python3"]
