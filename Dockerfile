@@ -36,7 +36,7 @@ RUN apt-get update && \
         zlib1g-dev \
         libbz2-dev \
         libreadline-dev \
-        libsqlite3-dev && \
+        libsqlite3-dev \
         liblzma-dev \
         xz-utils && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
