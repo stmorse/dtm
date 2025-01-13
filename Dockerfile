@@ -37,6 +37,8 @@ RUN apt-get update && \
         libbz2-dev \
         libreadline-dev \
         libsqlite3-dev && \
+        liblzma-dev \
+        xz-utils && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Download & build Python 3.12
