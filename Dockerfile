@@ -14,7 +14,7 @@ RUN python -m pip install --upgrade pip
 # Copy the requirements file into the image
 COPY requirements.txt /tmp/requirements.txt
 
-# Install dependencies
+# Install dependencies (now includes Dask)
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Set a working directory
