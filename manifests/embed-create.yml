@@ -8,7 +8,6 @@ spec:
     runAsGroup: 1132
   containers:
     - name: embed-pod
-      # image: docker.io/stmorse314/transformers-torch:latest
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
