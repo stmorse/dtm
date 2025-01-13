@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data
+spec:
+  securityContext:
+    runAsUser: 270999
+    runAsGroup: 1132
+  containers:
+    - name: data-pod
+      # image: docker.io/stmorse314/transformers-torch:latest
+      image: ghcr.io/stmorse/dtm:latest
+      resources:
+        requests:
+          memory: '128Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '8'
+        limits:
+          memory: '128Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '8'
+      command: ['/bin/sh']
+      args:
+        - '-c'
+        - |
+          echo "Running container..."
+          cd /sciclone/geograd/stmorse/dtm/src
+          python -u 0_data.py > ../logs/data_out.log
+          sleep infinity
+      # env:
+      #   - name: HF_HOME
+      #     value: '/sciclone/home/stmorse/.cache/huggingface/hub'
+      volumeMounts:
+        - name: home
+          mountPath: /sciclone/home/stmorse
+        - name: data
+          mountPath: /sciclone/data10/twford/reddit/reddit
+        - name: results
+          mountPath: /sciclone/geograd/stmorse
+  volumes:
+    - name: home
+      nfs:
+        server: 128.239.56.166
+        path: /sciclone/home/stmorse
+    - name: data
+      nfs:
+        server: 128.239.56.30
+        path: /sciclone/data10/twford/reddit/reddit
+    - name: results
+      nfs:
+        server: 128.239.59.144
+        path: /sciclone/geograd/stmorse
