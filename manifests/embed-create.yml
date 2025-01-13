@@ -23,7 +23,13 @@ spec:
         - |
           echo "Running container..."
           # cd /sciclone/geograd/stmorse/dtm/src
-          # python -u 1_embed.py > out.log
+          # python3 -u 1_embed.py \
+          # --start-year 2007 \
+          # --end-year 2007 \
+          # --start-month 2 \
+          # --end-month 2 \
+          # --chunk-size 1000000
+          # > ../logs/embed_out.log
           sleep infinity
       env:
         - name: HF_HOME

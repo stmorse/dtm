@@ -10,13 +10,16 @@ spec:
     - name: dev-pod
       # image: docker.io/stmorse314/transformers-torch:latest
       image: ghcr.io/stmorse/dtm:latest
+      # image: docker.io/busybox
       resources:
         requests:
-          memory: '128Gi'
-          nvidia.com/gpu: '1'
+          memory: '64Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '4'
         limits:
-          memory: '128Gi'
-          nvidia.com/gpu: '1'
+          memory: '64Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '4'
       command: ['/bin/sh']
       args:
         - '-c'
