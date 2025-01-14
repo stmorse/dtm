@@ -12,23 +12,23 @@ spec:
       resources:
         requests:
           memory: '128Gi'
-          nvidia.com/gpu: '1'
+          nvidia.com/gpu: '2'
         limits:
           memory: '128Gi'
-          nvidia.com/gpu: '1'
+          nvidia.com/gpu: '2'
       command: ['/bin/sh']
       args:
         - '-c'
         - |
           echo "Running container..."
-          # cd /sciclone/geograd/stmorse/dtm/src
-          # python3 -u 1_embed.py \
-          # --start-year 2007 \
-          # --end-year 2007 \
-          # --start-month 2 \
-          # --end-month 2 \
-          # --chunk-size 1000000
-          # > ../logs/embed_out.log
+          cd /sciclone/geograd/stmorse/dtm/src
+          python3 -u 1_embed.py \
+          --start-year 2015 \
+          --end-year 2015 \
+          --start-month 11 \
+          --end-month 11 \
+          --chunk-size 1000000
+          > ../logs/embed_out.log
           sleep infinity
       env:
         - name: HF_HOME

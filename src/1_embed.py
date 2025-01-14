@@ -70,6 +70,7 @@ def main(
                                 device='cuda',
                                 model_kwargs={'torch_dtype': 'float16'}) 
     embedding_dim = model.get_sentence_embedding_dimension()
+    print(f'Model embedding dimension: {embedding_dim}')
 
     print(f'Starting multiprocessing pool ... ({time.time()-t0:.2f})')  
     pool = model.start_multi_process_pool()
@@ -100,18 +101,15 @@ def main(
             # Encode sentences in this chunk (last chunk will be leftovers)
             # embeddings = model.encode(chunk_of_sents, convert_to_numpy=True)
             embeddings = model.encode_multi_process(
-                chunk, pool, convert_to_numpy=True, 
+                chunk, 
+                pool, 
+                # convert_to_numpy=True,    # this was in example but doesn't work
                 show_progress_bar=show_progress
             )
 
-            # Expand zarr
-            new_size = zarr_store.shape[0] + embeddings.shape[0]
-            zarr_store.resize(new_size, axis=0)
+            zarr_store.append(embeddings)
 
-            # Write chunk into position
-            zarr_store[total_count:new_size, :] = embeddings
-
-            total_count = new_size
+            total_count = zarr_store.shape[0]
             print(f"> Processed chunk {chunk_count}, total {total_count} \
                   ... ({time.time()-t0:.2f})")
             chunk_count += 1
@@ -199,7 +197,7 @@ if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--embed-path', type=str, default=g['embed_path'])
-    parser.add_argument('--meta-path', type=str, default=g['meta'])
+    parser.add_argument('--meta-path', type=str, default=g['meta_path'])
     parser.add_argument('--start-year', type=int)
     parser.add_argument('--end-year', type=int)
     parser.add_argument('--start-month', type=int)
