@@ -1,0 +1,190 @@
+import argparse
+import bz2
+import configparser
+import gc
+import heapq        # for top-k cluster members
+import json
+import os
+import pickle
+import time
+
+import numpy as np
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+import joblib
+import dask.array as da
+
+def train_cluster_model(
+    data_path: str,
+    embed_path: str,
+    label_path: str,
+    model_path: str,
+    tfidf_path: str,
+    n_clusters: int,
+    start_year: int,
+    end_year: int,
+    start_month: int,
+    end_month: int,
+    chunk_size: int,
+    top_k: int,         # num sentences closest to centroid to use
+    top_m: int,         # num keywords to store
+    max_df: float,      # max doc freq threshold for tfidf to include term
+):
+    t0 = time.time()
+    years = [str(y) for y in range(start_year, end_year+1)]
+    months = [f'{m:02}' for m in range(start_month, end_month+1)]
+
+    print(f'CPU count                 : {joblib.cpu_count()}, {os.cpu_count()}')
+    print(f'Embedding range           : {years}, {months}')
+    print(f'Saving labels to path     : {label_path}')
+    
+    for year, month in [(yr, mo) for yr in years for mo in months]:
+        # NOTE: creating new model each month, no warm start
+        # note: batch_size is within-chunk (using default)
+        print(f'Creating new model (n_clusters: {n_clusters})... ({time.time()-t0:.2f})')
+        model = MiniBatchKMeans(n_clusters=n_clusters)
+
+        # ----
+        # FIT
+        # ----
+        
+        print(f'\nLoading embeddings {year}-{month} ... ({time.time()-t0:.2f})')
+        ddata = da.from_zarr(os.path.join(embed_path, f'embeddings_{year}-{month}.zarr'))
+        L = ddata.shape[0]
+        M = len(ddata.chunks)
+        print(f'Total {L}, in {M} chunks')
+
+        # We'll iterate chunks and do partial fit
+        i = 0
+        for chunk in ddata.to_delayed():
+            print(f'> Fitting chunk {i} ({len(chunk)}) ... ({time.time()-t0:.2f})')
+            arr = chunk.compute()  
+            model.partial_fit(arr)
+            i += 1
+
+        # save just cluster centroids (for joblib incompatibility)
+        # cc_name = f'model_cc_{year}-{month}.npz'
+        # with open(os.path.join(model_path, cc_name), 'wb') as f:
+        #     np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
+
+        # ----
+        # LABEL
+        # ----
+
+        # labels = []
+        # print(f'Labeling (size: {L}) (chunks: {M}) ...')
+        # for chunk in ddata.to_delayed():
+        #     print(f'> Labeling chunk {i} ({len(chunk)}) ... ({time.time()-t0:.2f})')
+        #     arr = chunk.compute()
+        #     labels_chunk = model.predict(arr)
+        #     labels.append(labels_chunk)
+
+        # labels = np.concatenate(labels)
+
+        # cluster centers are now final
+        cluster_centers = model.cluster_centers_
+
+        # label (predict) and find top_k datapoints by distance to each centroid
+        labels = []
+        # closest_heaps = [[] for _ in range(n_clusters)]
+        
+        # global index to where we are in the array
+        # global_index = 0
+        for chunk in ddata.to_delayed():
+            arr = chunk.compute()
+            labels_chunk = model.predict(arr)
+
+            # For each cluster c, we extract the rows in this chunk, compute distances,
+            # and then keep a local top_k. We'll push that into the global top_k heap.
+            # for c in range(n_clusters):
+            #     local_indices = np.where(labels_chunk == c)[0]
+            #     if local_indices.size == 0:
+            #         continue
+
+            #     # Calculate distances to centroid c
+            #     dist_c = np.linalg.norm(arr[local_indices] - cluster_centers[c], axis=1)
+
+            #     # Find the chunk’s top_k rows (or fewer if the cluster has <k here)
+            #     k_local = min(top_k, local_indices.size)
+            #     top_k_local = np.argpartition(dist_c, k_local)[:k_local]
+
+            #     # Insert that local top_k into the cluster's global heap
+            #     for idx in top_k_local:
+            #         dist_val = dist_c[idx]
+            #         global_idx_of_point = global_index + local_indices[idx]
+
+            #         # If heap isn't filled yet, just push
+            #         if len(closest_heaps[c]) < top_k:
+            #             heapq.heappush(closest_heaps[c], (-dist_val, global_idx_of_point))
+            #         else:
+            #             # If this new distance is better (smaller), replace the worst in the heap
+            #             worst_neg_dist, _ = closest_heaps[c][0]  # largest distance in top-k
+            #             if -dist_val > worst_neg_dist:
+            #                 heapq.heapreplace(closest_heaps[c], (-dist_val, global_idx_of_point))
+
+            # global_index += arr.shape[0]
+            labels.append(labels_chunk)
+
+        # --- Extract final top_k indices (sorted by distance ascending) ---
+        # closest_indices_per_cluster = {}
+        # for c in range(n_clusters):
+        #     # heap entries are (-distance, global_idx)
+        #     sorted_heap = sorted(closest_heaps[c], key=lambda x: x[0])
+        #     closest_indices_per_cluster[c] = [idx for negdist, idx in sorted_heap]
+
+
+        # Save labels
+        # print(f'> Saving labels ... ({time.time()-t0:.2f})')
+        # label_name = f'labels_{year}-{month}.npz'
+        # with open(os.path.join(label_path, label_name), 'wb') as f:
+        #     np.savez_compressed(f, labels=labels, allow_pickle=False)
+
+        # ---
+        # TFIDF
+        # ---
+
+        print(f'Computing tf-idf ... ')
+
+        print('( PASS )')
+
+if __name__=="__main__":
+    config = configparser.ConfigParser()
+    config.read('../config.ini')
+    g = config['general']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--start-year', type=int, required=True)
+    parser.add_argument('--end-year', type=int, required=True)
+    parser.add_argument('--start-month', type=int, required=True)
+    parser.add_argument('--end-month', type=int, required=True)
+    parser.add_argument('--n-clusters', type=int, required=True)
+    parser.add_argument('--chunk-size', type=int, required=True)
+    parser.add_argument('--top-k', type=int, required=True)
+    parser.add_argument('--top-m', type=int, required=True)
+    parser.add_argument('--max-df', type=float, required=True)
+    args = parser.parse_args()
+
+    subpath = os.path.join(g['save_path'], args.subpath)
+    
+    for subdir in ['labels', 'models', 'tfidf']:
+        if not os.path.exists(os.path.join(subpath, subdir)):
+            os.makedirs(os.path.join(subpath, subdir))
+    
+    train_cluster_model(
+        data_path=g['data_path'],
+        embed_path=g['embed_path'],
+        label_path=os.path.join(subpath, 'labels'),
+        model_path=os.path.join(subpath, 'models'),
+        tfidf_path=os.path.join(subpath, 'tfidf'),
+        n_clusters=args.n_clusters,
+        start_year=args.start_year,
+        end_year=args.end_year,
+        start_month=args.start_month,
+        end_month=args.end_month,
+        chunk_size=args.chunk_size,
+        top_k=args.top_k,
+        top_m=args.top_m,
+        max_df=args.max_df
+    )
+        

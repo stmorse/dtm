@@ -11,11 +11,11 @@ spec:
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '128Gi'
-          nvidia.com/gpu: '2'
+          memory: '48Gi'
+          nvidia.com/gpu: '1'
         limits:
-          memory: '128Gi'
-          nvidia.com/gpu: '2'
+          memory: '48Gi'
+          nvidia.com/gpu: '1'
       command: ['/bin/sh']
       args:
         - '-c'
@@ -23,12 +23,12 @@ spec:
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 1_embed.py \
-          --start-year 2015 \
-          --end-year 2015 \
-          --start-month 11 \
-          --end-month 11 \
-          --chunk-size 1000000
-          > ../logs/embed_out.log
+            --start-year 2015 \
+            --end-year 2015 \
+            --start-month 11 \
+            --end-month 11 \
+            --chunk-size 1000000 \
+            > ../logs/embed_out.log
           sleep infinity
       env:
         - name: HF_HOME

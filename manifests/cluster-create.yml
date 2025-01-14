@@ -14,23 +14,23 @@ spec:
         requests:
           memory: '128Gi'
           # nvidia.com/gpu: '1'
-          cpu: '4'
+          cpu: '8'
         limits:
           memory: '128Gi'
           # nvidia.com/gpu: '1'
-          cpu: '4'
+          cpu: '8'
       command: ['/bin/sh']
       args:
         - '-c'
         - |
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
-          python -u 2_cluster.py \
+          python -u 2a_cluster_s.py \
             --subpath mbkm_50 \
-            --start-year 2013 \
-            --end-year 2014 \
+            --start-year 2007 \
+            --end-year 2007 \
             --start-month 1 \
-            --end-month 12 \
+            --end-month 1 \
             --n-clusters 50 \
             --chunk-size 1000000 \
             --top-k 100 \
