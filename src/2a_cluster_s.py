@@ -25,7 +25,6 @@ def train_cluster_model(
     end_year: int,
     start_month: int,
     end_month: int,
-    chunk_size: int,
     top_k: int,         # num sentences closest to centroid to use
     top_m: int,         # num keywords to store
     max_df: float,      # max doc freq threshold for tfidf to include term
@@ -62,9 +61,9 @@ def train_cluster_model(
             i += 1
 
         # save just cluster centroids (for joblib incompatibility)
-        # cc_name = f'model_cc_{year}-{month}.npz'
-        # with open(os.path.join(model_path, cc_name), 'wb') as f:
-        #     np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
+        cc_name = f'model_cc_{year}-{month}.npz'
+        with open(os.path.join(model_path, cc_name), 'wb') as f:
+            np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
 
         # ----
         # LABEL + FIND top_k TO CENTROID
@@ -131,10 +130,10 @@ def train_cluster_model(
         labels = np.concatenate(labels)
 
         # Save labels
-        # print(f'> Saving labels ... ({time.time()-t0:.2f})')
-        # label_name = f'labels_{year}-{month}.npz'
-        # with open(os.path.join(label_path, label_name), 'wb') as f:
-        #     np.savez_compressed(f, labels=labels, allow_pickle=False)
+        print(f'> Saving labels ... ({time.time()-t0:.2f})')
+        label_name = f'labels_{year}-{month}.npz'
+        with open(os.path.join(label_path, label_name), 'wb') as f:
+            np.savez_compressed(f, labels=labels, allow_pickle=False)
 
         # ---
         # TFIDF
@@ -161,7 +160,6 @@ def train_cluster_model(
                     # we have a candidate
                     c = idx_to_cluster[i]
                     corpus[c].append(entry['body'])
-
         
         # collapse into a format for tf-idf vectorizor
         for i in range(len(corpus)):
@@ -201,8 +199,13 @@ def train_cluster_model(
             }
         }
 
-        # with open(os.path.join(tfidf_path, f'tfidf_{year}-{month}.pkl'), 'wb') as f:
-        #     pickle.dump(output, f)
+        with open(os.path.join(tfidf_path, f'tfidf_{year}-{month}.pkl'), 'wb') as f:
+            pickle.dump(output, f)
+
+        print('Garbage collection ...')
+        gc.collect()
+
+    print(f'Complete. ({time.time()-t0:.2f})')
 
 
 if __name__=="__main__":
@@ -217,7 +220,6 @@ if __name__=="__main__":
     parser.add_argument('--start-month', type=int, required=True)
     parser.add_argument('--end-month', type=int, required=True)
     parser.add_argument('--n-clusters', type=int, required=True)
-    parser.add_argument('--chunk-size', type=int, required=True)
     parser.add_argument('--top-k', type=int, required=True)
     parser.add_argument('--top-m', type=int, required=True)
     parser.add_argument('--max-df', type=float, required=True)
@@ -240,7 +242,6 @@ if __name__=="__main__":
         end_year=args.end_year,
         start_month=args.start_month,
         end_month=args.end_month,
-        chunk_size=args.chunk_size,
         top_k=args.top_k,
         top_m=args.top_m,
         max_df=args.max_df

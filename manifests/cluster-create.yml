@@ -32,7 +32,6 @@ spec:
             --start-month 1 \
             --end-month 1 \
             --n-clusters 50 \
-            --chunk-size 1000000 \
             --top-k 100 \
             --top-m 20 \
             --max-df 0.3 \

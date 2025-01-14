@@ -13,12 +13,12 @@ spec:
       resources:
         requests:
           memory: '128Gi'
-          nvidia.com/gpu: '1'
-          # cpu: '8'
+          # nvidia.com/gpu: '1'
+          cpu: '4'
         limits:
           memory: '128Gi'
-          nvidia.com/gpu: '1'
-          # cpu: '8'
+          # nvidia.com/gpu: '1'
+          cpu: '4'
       command: ['/bin/sh']
       args:
         - '-c'
@@ -28,7 +28,7 @@ spec:
           python3 -u 1a_convert_embed.py \
             --start-year 2015 \
             --end-year 2015 \
-            --start-month 2 \
+            --start-month 7 \
             --end-month 10 \
             --chunk-size 1000000 \
             > ../logs/convert_out.log
