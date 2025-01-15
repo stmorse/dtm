@@ -25,8 +25,8 @@ spec:
           python3 -u 1_embed.py \
             --start-year 2015 \
             --end-year 2015 \
-            --start-month 11 \
-            --end-month 11 \
+            --start-month 12 \
+            --end-month 12 \
             --chunk-size 1000000 \
             > ../logs/embed_out.log
           sleep infinity
