@@ -11,10 +11,8 @@ spec:
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '48Gi'
           nvidia.com/gpu: '1'
         limits:
-          memory: '48Gi'
           nvidia.com/gpu: '1'
       command: ['/bin/sh']
       args:
@@ -23,9 +21,9 @@ spec:
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 1_embed.py \
-            --start-year 2015 \
-            --end-year 2015 \
-            --start-month 12 \
+            --start-year 2016 \
+            --end-year 2016 \
+            --start-month 1 \
             --end-month 12 \
             --chunk-size 1000000 \
             > ../logs/embed_out.log
