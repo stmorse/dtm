@@ -23,44 +23,61 @@
 # # Default command (optional, can be overridden by kubectl or docker run)
 # CMD ["python3"]
 
-FROM nvidia/cuda:12.4.1-base-ubuntu22.04
+
+
+# FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
 # Sys packages for building Python
-RUN apt-get update && \
-    apt-get install -y \
-        build-essential \
-        wget \
-        curl \
-        libssl-dev \
-        libffi-dev \
-        zlib1g-dev \
-        libbz2-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        liblzma-dev \
-        xz-utils && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && \
+#     apt-get install -y \
+#         build-essential \
+#         wget \
+#         curl \
+#         libssl-dev \
+#         libffi-dev \
+#         zlib1g-dev \
+#         libbz2-dev \
+#         libreadline-dev \
+#         libsqlite3-dev \
+#         liblzma-dev \
+#         xz-utils && \
+#     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download & build Python 3.12
-WORKDIR /tmp
-RUN wget https://www.python.org/ftp/python/3.12.0/Python-3.12.0.tgz && \
-    tar -xf Python-3.12.0.tgz && \
-    cd Python-3.12.0 && \
-    ./configure --enable-optimizations --with-ensurepip=install && \
-    make -j$(nproc) && \
-    make altinstall && \
-    rm -rf /tmp/Python-3.12.0*
+# # Download & build Python 3.12
+# WORKDIR /tmp
+# RUN wget https://www.python.org/ftp/python/3.12.0/Python-3.12.0.tgz && \
+#     tar -xf Python-3.12.0.tgz && \
+#     cd Python-3.12.0 && \
+#     ./configure --enable-optimizations --with-ensurepip=install && \
+#     make -j$(nproc) && \
+#     make altinstall && \
+#     rm -rf /tmp/Python-3.12.0*
 
-# Link python3 -> python3.12
-RUN ln -s /usr/local/bin/python3.12 /usr/local/bin/python3
+# # Link python3 -> python3.12
+# RUN ln -s /usr/local/bin/python3.12 /usr/local/bin/python3
 
-# Make sure pip is up to date
-RUN python3 -m pip install --upgrade pip
+# # Make sure pip is up to date
+# RUN python3 -m pip install --upgrade pip
 
 # Copy your requirements
 # COPY requirements.txt /tmp/requirements.txt
 # RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-WORKDIR /
+# WORKDIR /
 # CMD ["python3"]
+
+
+FROM nvidia/cuda:12.4.1-base-ubuntu22.04
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3.12 \
+    python3.12-dev \
+    python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3.12 -m pip install --upgrade pip
+
+WORKDIR /
 
