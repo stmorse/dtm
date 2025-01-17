@@ -58,9 +58,9 @@ RUN ln -s /usr/local/bin/python3.12 /usr/local/bin/python3
 RUN python3 -m pip install --upgrade pip
 
 # Copy your requirements
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# COPY requirements.txt /tmp/requirements.txt
+# RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /
-CMD ["python3"]
+# CMD ["python3"]
 
