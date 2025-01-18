@@ -73,9 +73,9 @@ RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
-    apt-get install -y python3.12 python3.12-distutils python3.12-venv && \
+    apt-get install -y python3.12 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-    
+
 # Upgrade pip
 RUN python3.12 -m pip install --upgrade pip
 
