@@ -69,6 +69,8 @@
 
 FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
