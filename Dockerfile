@@ -67,22 +67,31 @@
 # CMD ["python3"]
 
 
-FROM nvidia/cuda:12.4.1-base-ubuntu22.04
+# FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+# ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.12 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && \
+#     apt-get install -y software-properties-common && \
+#     add-apt-repository ppa:deadsnakes/ppa && \
+#     apt-get update && \
+#     apt-get install -y python3.12 && \
+#     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# debug
-RUN pip --version
+# # debug
+# RUN pip --version
 
-# Upgrade pip
-RUN python3.12 -m pip install --upgrade pip
+# # Upgrade pip
+# RUN python3.12 -m pip install --upgrade pip
+
+# WORKDIR /
+
+
+
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# Copy requirements
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /
-
