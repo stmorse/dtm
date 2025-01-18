@@ -79,7 +79,7 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # debug
-RUN python3.12 -m ensurepip --version
+RUN pip --version
 
 # Upgrade pip
 RUN python3.12 -m pip install --upgrade pip
