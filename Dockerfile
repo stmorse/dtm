@@ -70,12 +70,12 @@
 FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3.12 \
-    python3.12-dev \
-    python3-pip && \
-    rm -rf /var/lib/apt/lists/*
-
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.12 python3.12-distutils python3.12-venv && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+    
 # Upgrade pip
 RUN python3.12 -m pip install --upgrade pip
 
