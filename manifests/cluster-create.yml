@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cluster201612
+  name: cluster20179
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   containers:
-    - name: cluster201612-pod
+    - name: cluster20176-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
@@ -26,15 +26,15 @@ spec:
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 2a_cluster_s.py \
             --subpath mbkm_50 \
-            --start-year 2016 \
-            --end-year 2016 \
-            --start-month 10 \
-            --end-month 12 \
+            --start-year 2017 \
+            --end-year 2017 \
+            --start-month 7 \
+            --end-month 9 \
             --n-clusters 50 \
             --top-k 100 \
             --top-m 20 \
             --max-df 0.3 \
-            > ../logs/cluster2016_12_out.log
+            > ../logs/cluster2017_9_out.log
           sleep infinity
       # env:
       #   - name: HF_HOME

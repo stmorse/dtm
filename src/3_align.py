@@ -10,9 +10,8 @@ import pickle
 import time
 
 import numpy as np
-# import matplotlib.pyplot as plt
-from sklearn.cluster import AgglomerativeClustering
-from scipy.cluster.hierarchy import dendrogram, linkage
+import umap
+from sklearn.cluster import HDBSCAN
 import joblib
 
 def align_clusters(
@@ -23,62 +22,64 @@ def align_clusters(
     end_year: int,
     start_month: int,
     end_month: int,
+    align_dim: int,
 ):
     t0 = time.time()
     years = [str(y) for y in range(start_year, end_year+1)]
     months = [f'{m:02}' for m in range(start_month, end_month+1)]
     yrmo = [(yr, mo) for yr in years for mo in months]
 
+    # TODO: doesn't need to be the same every month, hardcoded
+    Ck = 50  
+
     print(f'CPU count                 : {os.cpu_count()}')
     print(f'Aligning range            : {years}, {months}')
     print(f'Saving model to path      : {align_path}')
+    print(f'Cluster size:             : {Ck}')
     
     # open cluster centers
     print(f'\nLoading cluster centers ... ({time.time()-t0:.2f})')
-    C = []
-    Ck = -1  # TODO: doesn't need to be the same every month
+    C = []  
     for year, month in yrmo:
         with open(os.path.join(model_path, f'model_cc_{year}-{month}.npz'), 'rb') as f:
             cc = np.load(f)['cc']
-            Ck = cc.shape[0]
+            if Ck != cc.shape[0]: print(Ck, cc.shape[0])
             C.append(cc)
     C = np.vstack(C)
     print(f'> Complete. (shape: {C.shape}) ... ({time.time()-t0:.2f})')
-    print(f'> Num clusters in each time window: {Ck}')
     print(f'> Num time windows: {C.shape[0] / Ck}  (should be whole number)')
 
-    # TODO: doesn't need to be the same every month
-    if len(yrmo) != C.shape[0] // Ck:
-        print('Does not match model sizes! Exiting')
-        return
-
-    # threshold for cluster cutoff
-    thresh = 0.25
-
-    # create dendrogram
-    # print(f'Making dendrogram ... ({time.time()-t0:.2f})')
-    # Z = linkage(C, 'ward')
-    # fig = plt.figure(figsize=(10, 7))
-    # dendrogram(Z)
-    # plt.axhline(y=thresh, color='r', linestyle='--')
-    # fig.savefig('dendrogram.png', dpi=fig.dpi)  
-
     # cluster centroids
-    print(f'Fitting alignment model ... ({time.time()-t0:.2f})')
-    ahc = AgglomerativeClustering(
-        n_clusters=None,
-        distance_threshold=0.25,
-        linkage='ward',
+    print(f'Dimension reduction ... ')
+    u_embedder = umap.UMAP(
+        n_neighbors=15,
+        n_components=align_dim,
+        metric='euclidean',
+        init='spectral',
+        min_dist=0.1,
+        spread=1.0
     )
-    ahc.fit(C)
-    print(f'> Model fit complete, (n_clusters: {ahc.n_clusters_})')
-    print(f'> (Note: compare with clusters per time window, {Ck})')
+    Cu = u_embedder.fit_transform(C)
+    print(f'> Shape: {Cu.shape} ...')
+
+    print(f'Fitting alignment model ... ({time.time()-t0:.2f})')
+    hdbs = HDBSCAN(
+        min_cluster_size=3,
+        min_samples=None,       # None defaults to min_cluster_size
+        cluster_selection_epsilon=0.0,
+        max_cluster_size=20,
+        metric='euclidean',
+        store_centers='both',   # centroid and medoid
+    )
+    hdbs.fit(Cu)
+    print(f'> Complete. Labels/counts: ... ')
+    print(np.unique(hdbs.labels_, return_counts=True))
 
     print(f'> Saving ...')
     with open(os.path.join(align_path, 'align_model.pkl'), 'wb') as f:
-        joblib.dump(ahc, f)
+        joblib.dump(hdbs, f)
     with open(os.path.join(align_path, 'align_model_labels.pkl'), 'wb') as f:
-        np.savez_compressed(f, labels=ahc.labels_, allow_pickle=False)
+        np.savez_compressed(f, labels=hdbs.labels_, allow_pickle=False)
 
     # load cluster representations
     print(f'Loading tfidf ... ({time.time()-t0:.2f})')

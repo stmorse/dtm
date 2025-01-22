@@ -1,7 +1,8 @@
 venv
 logs
+archive
+output
 .ipynb_checkpoints
 __pycache__
 config.ini
 *.log
-archive

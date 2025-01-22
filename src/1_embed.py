@@ -4,23 +4,32 @@ then batches into multiple GPU for encoding,
 and saves to file
 """
 
-import bz2
-import json
-import time
-import pickle
-import gc
-import configparser
 import argparse
+import bz2              # for .bz2
+import configparser
+import gc
+import json
+import lzma             # for .xz
 import os
+import pickle           # currently not collecting metadata
+import time
 
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 import zarr
 
+def open_compressed(file_path):
+    if file_path.endswith('.bz2'):
+        return bz2.BZ2File(file_path, 'rb')
+    elif file_path.endswith('.xz'):
+        return lzma.open(file_path, 'rb')
+    else:
+        raise ValueError('Unsupported file extension.')
+
 def read_sentences(file_path, chunk_size=10000):
     buffer = []
-    with bz2.BZ2File(file_path, 'rb') as f:
+    with open_compressed(file_path) as f:
         for line in f:
             entry = json.loads(line)
 
@@ -78,8 +87,16 @@ def main(
     for year, month in [(yr, mo) for yr in years for mo in months]:
         print(f'Processing {year}-{month} ... ({time.time()-t0:.2f})')
 
-        # path to bz2 compressed file
-        file_path = os.path.join(data_path, f'RC_{year}-{month}.bz2')
+        # path to compressed file
+        file_path = None
+        for ext in ['.bz2', '.xz']:
+            potential_path = os.path.join(data_path, f'RC_{year}-{month}{ext}')
+            if os.path.exists(potential_path):
+                file_path = potential_path
+                break
+        if file_path is None:
+            raise FileNotFoundError(f"No file found for {year}-{month} with supported extensions (.bz2, .xz)")
+        # file_path = os.path.join(data_path, f'RC_{year}-{month}.bz2')
 
         # Open the bz2 compressed file
         print(f'> Loading comments (Batch size: {chunk_size}) ... ({time.time()-t0:.3f})')
