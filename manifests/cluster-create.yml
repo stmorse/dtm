@@ -1,24 +1,23 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cluster
+  name: cluster201612
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   containers:
-    - name: cluster-pod
-      # image: docker.io/stmorse314/transformers-torch:latest
+    - name: cluster201612-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
           memory: '128Gi'
           # nvidia.com/gpu: '1'
-          cpu: '8'
+          cpu: '32'
         limits:
           memory: '128Gi'
           # nvidia.com/gpu: '1'
-          cpu: '8'
+          cpu: '32'
       command: ['/bin/sh']
       args:
         - '-c'
@@ -27,31 +26,31 @@ spec:
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 2a_cluster_s.py \
             --subpath mbkm_50 \
-            --start-year 2015 \
-            --end-year 2015 \
-            --start-month 1 \
-            --end-month 6 \
+            --start-year 2016 \
+            --end-year 2016 \
+            --start-month 10 \
+            --end-month 12 \
             --n-clusters 50 \
             --top-k 100 \
             --top-m 20 \
             --max-df 0.3 \
-            > ../logs/cluster_out.log
+            > ../logs/cluster2016_12_out.log
           sleep infinity
       # env:
       #   - name: HF_HOME
       #     value: '/sciclone/home/stmorse/.cache/huggingface/hub'
       volumeMounts:
-        - name: home
-          mountPath: /sciclone/home/stmorse
+        # - name: home
+        #   mountPath: /sciclone/home/stmorse
         - name: data
           mountPath: /sciclone/data10/twford/reddit/reddit
         - name: results
           mountPath: /sciclone/geograd/stmorse
   volumes:
-    - name: home
-      nfs:
-        server: 128.239.56.166
-        path: /sciclone/home/stmorse
+    # - name: home
+    #   nfs:
+    #     server: 128.239.56.4    # switch to bora
+    #     path: /sciclone/home/stmorse
     - name: data
       nfs:
         server: 128.239.56.30

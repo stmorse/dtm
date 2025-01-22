@@ -101,7 +101,10 @@ def train_cluster_model(
                 # Find the chunk’s top_k rows (or fewer if the cluster has <k here)
                 # argpartition better than argsort here, only need top_k, unsorted
                 k_local = min(top_k, local_indices.size)
-                top_k_local = np.argpartition(dist_c, k_local)[:k_local]
+                if k_local > 0:
+                    top_k_local = np.argpartition(dist_c, k_local-1)[:k_local]
+                else:
+                    top_k_local = []
 
                 # Insert that local top_k into the cluster's global heap
                 for idx in top_k_local:
@@ -151,15 +154,15 @@ def train_cluster_model(
                 entry = json.loads(line)
                 if 'body' not in entry or entry['author']=='[deleted]':
                     continue
-                
-                # increment i whether we add or not
-                i += 1
 
                 # check if i is in top_k of any cluster
                 if i in idx_to_cluster:
                     # we have a candidate
                     c = idx_to_cluster[i]
                     corpus[c].append(entry['body'])
+
+                # increment i whether we added or not
+                i += 1
         
         # collapse into a format for tf-idf vectorizor
         for i in range(len(corpus)):

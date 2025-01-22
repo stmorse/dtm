@@ -1,19 +1,20 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: embed
+  name: embed2018
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   containers:
-    - name: embed-pod
+    - name: embed2018-pod
       image: ghcr.io/stmorse/dtm:latest
+      # image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
       resources:
         requests:
-          nvidia.com/gpu: '1'
+          nvidia.com/gpu: '4'
         limits:
-          nvidia.com/gpu: '1'
+          nvidia.com/gpu: '4'
       command: ['/bin/sh']
       args:
         - '-c'
@@ -21,12 +22,12 @@ spec:
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 1_embed.py \
-            --start-year 2016 \
-            --end-year 2016 \
+            --start-year 2018 \
+            --end-year 2018 \
             --start-month 1 \
-            --end-month 12 \
+            --end-month 3 \
             --chunk-size 1000000 \
-            > ../logs/embed_out.log
+            > ../logs/embed2018_out.log
           sleep infinity
       env:
         - name: HF_HOME
