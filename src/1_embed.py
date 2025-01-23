@@ -1,53 +1,85 @@
 """
-Streams entirety of a month into CPU Mem, 
-then batches into multiple GPU for encoding,
-and saves to file
+Streams month chunk at a time into CPU Mem, 
+batches into multiple GPU for encoding,
+and saves to file in chunks (zarr / Dask)
 """
 
 import argparse
-import bz2              # for .bz2
 import configparser
 import gc
 import json
-import lzma             # for .xz
 import os
-import pickle           # currently not collecting metadata
+import pickle             # currently not collecting metadata
 import time
+
+import bz2                # for .bz2
+import lzma               # for .xz
+import zstandard as zstd  # for .zst
+import zarr
 
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
-import zarr
 
 def open_compressed(file_path):
     if file_path.endswith('.bz2'):
         return bz2.BZ2File(file_path, 'rb')
     elif file_path.endswith('.xz'):
         return lzma.open(file_path, 'rb')
+    elif file_path.endswith('.zst'):
+        # For .zst, return a stream reader
+        f = open(file_path, 'rb')  # Open file in binary mode
+        dctx = zstd.ZstdDecompressor()
+        return dctx.stream_reader(f)
     else:
         raise ValueError('Unsupported file extension.')
 
 def read_sentences(file_path, chunk_size=10000):
-    buffer = []
+    """
+    Read JSON entries from a compressed file, extract the 'body' field,
+    and yield chunks of size `chunk_size`.
+    """
+    buffer = []  # To store 'body' fields in chunks
+    byte_buffer = b""  # For handling partial lines in `.zst` files
+
     with open_compressed(file_path) as f:
-        for line in f:
-            entry = json.loads(line)
+        # Iterate over the file
+        for chunk in iter(lambda: f.read(8192), b""):  # Read file in binary chunks
+            byte_buffer += chunk
 
-            if 'body' not in entry or entry['author'] == '[deleted]':
-                continue
-            
-            # quick and dirty to keep entries closer to SBERT token limit (256)
-            body = entry['body']
-            if len(body) > 2000:
-                body = body[:2000]
+            # Process each line in the byte buffer
+            while b"\n" in byte_buffer:
+                line, byte_buffer = byte_buffer.split(b"\n", 1)
 
-            buffer.append(body)
-            if len(buffer) >= chunk_size:
-                yield buffer
-                buffer = []
-    # yield leftovers
-    if len(buffer) > 0:
-        yield buffer
+                # Parse JSON and process the 'body' field
+                entry = json.loads(line.decode("utf-8"))
+
+                if 'body' not in entry or entry['author'] == '[deleted]':
+                    continue
+
+                # Truncate long 'body' fields
+                body = entry['body']
+                if len(body) > 2000:
+                    body = body[:2000]
+
+                # Add to the chunk buffer
+                buffer.append(body)
+                if len(buffer) >= chunk_size:
+                    yield buffer
+                    buffer = []
+
+        # Handle any remaining partial JSON line
+        if byte_buffer:
+            entry = json.loads(byte_buffer.decode("utf-8"))
+            if 'body' in entry and entry['author'] != '[deleted]':
+                body = entry['body']
+                if len(body) > 2000:
+                    body = body[:2000]
+                buffer.append(body)
+
+        # Yield any leftovers in the chunk buffer
+        if buffer:
+            yield buffer
 
 
 def main(
@@ -89,16 +121,16 @@ def main(
 
         # path to compressed file
         file_path = None
-        for ext in ['.bz2', '.xz']:
+        for ext in ['.bz2', '.xz', '.zst']:
             potential_path = os.path.join(data_path, f'RC_{year}-{month}{ext}')
             if os.path.exists(potential_path):
                 file_path = potential_path
                 break
         if file_path is None:
-            raise FileNotFoundError(f"No file found for {year}-{month} with supported extensions (.bz2, .xz)")
-        # file_path = os.path.join(data_path, f'RC_{year}-{month}.bz2')
+            raise FileNotFoundError(
+                f"No file found for {year}-{month} with supported extensions (.bz2, .xz, .zst)")
 
-        # Open the bz2 compressed file
+        # Open the compressed file
         print(f'> Loading comments (Batch size: {chunk_size}) ... ({time.time()-t0:.3f})')
 
         # IF ZARR
@@ -220,7 +252,7 @@ if __name__=="__main__":
     parser.add_argument('--start-month', type=int)
     parser.add_argument('--end-month', type=int)
     parser.add_argument('--chunk-size', type=int, default=c['chunk_size'])
-    parser.add_argument('--show-progress', type=bool, default=True)
+    parser.add_argument('--show-progress', type=bool, default=False)
     parser.add_argument('--hf-model', type=str, default=c['hf_model'])
     
     args = parser.parse_args()

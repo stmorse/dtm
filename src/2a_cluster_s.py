@@ -1,5 +1,4 @@
 import argparse
-import bz2
 import configparser
 import gc
 import heapq        # for top-k cluster members
@@ -8,11 +7,67 @@ import os
 import pickle
 import time
 
+import bz2
+import lzma
+import zstandard as zstd
+
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 import dask.array as da
+
+def open_compressed(file_path):
+    if file_path.endswith('.bz2'):
+        return bz2.BZ2File(file_path, 'rb')
+    elif file_path.endswith('.xz'):
+        return lzma.open(file_path, 'rb')
+    elif file_path.endswith('.zst'):
+        # For .zst, return a stream reader
+        f = open(file_path, 'rb')  # Open file in binary mode
+        dctx = zstd.ZstdDecompressor()
+        return dctx.stream_reader(f)
+    else:
+        raise ValueError('Unsupported file extension.')
+
+def read_sentences(file_path, idx_to_cluster):
+    """
+    Read JSON entries from a compressed file, extract the 'body' field,
+    and yield if in the idx_to_cluster dict
+    """
+    byte_buffer = b""  # For handling partial lines in `.zst` files
+
+    with open_compressed(file_path) as f:
+        # Iterate over the file
+        i = 0
+        for chunk in iter(lambda: f.read(8192), b""):  # Read file in binary chunks
+            byte_buffer += chunk
+
+            # Process each line in the byte buffer
+            while b"\n" in byte_buffer:
+                line, byte_buffer = byte_buffer.split(b"\n", 1)
+
+                # Parse JSON and process the 'body' field
+                entry = json.loads(line.decode("utf-8"))
+
+                if 'body' not in entry or entry['author'] == '[deleted]':
+                    continue
+
+                # Truncate long 'body' fields
+                body = entry['body']
+                if len(body) > 2000:
+                    body = body[:2000]
+
+                if i in idx_to_cluster:
+                    # we have a candidate
+                    c = idx_to_cluster[i]
+                    yield c, body
+
+                # increment i whether we yielded or not
+                i += 1
+
+    # don't bother with leftovers for corpus building
+
 
 def train_cluster_model(
     data_path: str,
@@ -148,21 +203,35 @@ def train_cluster_model(
         corpus = [[] for _ in range(n_clusters)]
         idx_to_cluster = {ix: c for c in closest_indices_per_cluster \
                           for ix in closest_indices_per_cluster[c]}
-        with bz2.BZ2File(os.path.join(data_path, f'RC_{year}-{month}.bz2'), 'rb') as f:
-            i = 0
-            for line in f:
-                entry = json.loads(line)
-                if 'body' not in entry or entry['author']=='[deleted]':
-                    continue
+        # path to compressed file
+        file_path = None
+        for ext in ['.bz2', '.xz', '.zst']:
+            potential_path = os.path.join(data_path, f'RC_{year}-{month}{ext}')
+            if os.path.exists(potential_path):
+                file_path = potential_path
+                break
+        if file_path is None:
+            raise FileNotFoundError(
+                f"No file found for {year}-{month} with supported extensions (.bz2, .xz, .zst)")
+        
+        for c, sentence in read_sentences(file_path, idx_to_cluster):
+            corpus[c].append(sentence)
+        
+        # with bz2.BZ2File(os.path.join(data_path, f'RC_{year}-{month}.bz2'), 'rb') as f:
+        #     i = 0
+        #     for line in f:
+        #         entry = json.loads(line)
+        #         if 'body' not in entry or entry['author']=='[deleted]':
+        #             continue
 
-                # check if i is in top_k of any cluster
-                if i in idx_to_cluster:
-                    # we have a candidate
-                    c = idx_to_cluster[i]
-                    corpus[c].append(entry['body'])
+        #         # check if i is in top_k of any cluster
+        #         if i in idx_to_cluster:
+        #             # we have a candidate
+        #             c = idx_to_cluster[i]
+        #             corpus[c].append(entry['body'])
 
-                # increment i whether we added or not
-                i += 1
+        #         # increment i whether we added or not
+        #         i += 1
         
         # collapse into a format for tf-idf vectorizor
         for i in range(len(corpus)):
