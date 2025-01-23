@@ -7,7 +7,7 @@ spec:
     runAsUser: 270999
     runAsGroup: 1132
   containers:
-    - name: cluster20176-pod
+    - name: cluster20179-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
@@ -28,7 +28,7 @@ spec:
             --subpath mbkm_50 \
             --start-year 2017 \
             --end-year 2017 \
-            --start-month 7 \
+            --start-month 4 \
             --end-month 9 \
             --n-clusters 50 \
             --top-k 100 \
