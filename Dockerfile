@@ -1,3 +1,12 @@
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# Copy requirements
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+WORKDIR /
+
+
 # FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
 # # Install Python 3.12
@@ -86,12 +95,3 @@
 
 # WORKDIR /
 
-
-
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
-
-# Copy requirements
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
-WORKDIR /
