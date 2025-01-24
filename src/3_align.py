@@ -1,6 +1,6 @@
 """
 Load cluster centers
-Group (for now: AHC)
+Align
 Save model
 """
 
@@ -12,7 +12,7 @@ import time
 import numpy as np
 import umap
 from sklearn.cluster import HDBSCAN
-import joblib
+# import joblib
 
 def align_clusters(
     model_path: str,
@@ -23,6 +23,7 @@ def align_clusters(
     start_month: int,
     end_month: int,
     align_dim: int,
+    align_method: str,
 ):
     t0 = time.time()
     years = [str(y) for y in range(start_year, end_year+1)]
@@ -49,7 +50,6 @@ def align_clusters(
     print(f'> Complete. (shape: {C.shape}) ... ({time.time()-t0:.2f})')
     print(f'> Num time windows: {C.shape[0] / Ck}  (should be whole number)')
 
-    # cluster centroids
     print(f'Dimension reduction ... ')
     u_embedder = umap.UMAP(
         n_neighbors=15,
@@ -62,24 +62,40 @@ def align_clusters(
     Cu = u_embedder.fit_transform(C)
     print(f'> Shape: {Cu.shape} ...')
 
-    print(f'Fitting alignment model ... ({time.time()-t0:.2f})')
-    hdbs = HDBSCAN(
-        min_cluster_size=3,
-        min_samples=None,       # None defaults to min_cluster_size
-        cluster_selection_epsilon=0.0,
-        max_cluster_size=20,
-        metric='euclidean',
-        store_centers='both',   # centroid and medoid
-    )
-    hdbs.fit(Cu)
-    print(f'> Complete. Labels/counts: ... ')
-    print(np.unique(hdbs.labels_, return_counts=True))
+    Cu2d = umap.UMAP(n_components=2).fit_transform(C)
+
+    print(f'> Saving Cu and Cu2d ... ')
+    with open(os.path.join(align_path, f'cu.npz'), 'wb') as f:
+        np.savez_compressed(f, Cu=Cu, allow_pickle=False)
+    with open(os.path.join(align_path, f'cu2d.npz'), 'wb') as f:
+        np.savez_compressed(f, Cu2d=Cu2d, allow_pickle=False)
+
+    print(f'Fitting alignment model ({align_method}) ... ({time.time()-t0:.2f})')
+    model, n_clusters, labels = None, None, None
+    if align_method == 'HDBSCAN':    
+        model = HDBSCAN(
+            min_cluster_size=3,
+            min_samples=None,       # None defaults to min_cluster_size
+            cluster_selection_epsilon=0.0,
+            max_cluster_size=20,
+            metric='euclidean',
+            store_centers='both',   # centroid and medoid
+        )
+        model.fit(Cu)
+
+        labels = model.labels_
+        n_clusters = np.amax(labels)
+    else:
+        print(f'Error: align method ({align_method}) not supported. Exiting ...')
+        return
+
+    print(f'> Complete. Num clusters: {n_clusters}')
 
     print(f'> Saving ...')
-    with open(os.path.join(align_path, 'align_model.pkl'), 'wb') as f:
-        joblib.dump(hdbs, f)
-    with open(os.path.join(align_path, 'align_model_labels.pkl'), 'wb') as f:
-        np.savez_compressed(f, labels=hdbs.labels_, allow_pickle=False)
+    with open(os.path.join(align_path, f'align_model_{align_method}.pkl'), 'wb') as f:
+        pickle.dump(model, f)
+    with open(os.path.join(align_path, f'align_model_{align_method}_labels.pkl'), 'wb') as f:
+        np.savez_compressed(f, labels=labels, allow_pickle=False)
 
     # load cluster representations
     print(f'Loading tfidf ... ({time.time()-t0:.2f})')
@@ -94,8 +110,8 @@ def align_clusters(
     # save aligned cluster representations
     print(f'Saving group representations ... ({time.time()-t0:.2f})')
     results = 'Cluster (Time): Keywords\n\n'
-    for k in range(ahc.n_clusters_):
-        idx = np.where(ahc.labels_ == k)[0]
+    for k in range(n_clusters):
+        idx = np.where(labels == k)[0]
         results += f'Group: {idx}\n'
         for x in idx:
             results += f'{x} ({x // Ck}): {T[x][:10]}\n'

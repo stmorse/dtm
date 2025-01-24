@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cluster20183
+  name: cluster20193
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
+  restartPolicy: Never
   containers:
-    - name: cluster20183-pod
+    - name: cluster20193-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
@@ -26,15 +27,15 @@ spec:
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 2a_cluster_s.py \
             --subpath mbkm_50 \
-            --start-year 2018 \
-            --end-year 2018 \
+            --start-year 2019 \
+            --end-year 2019 \
             --start-month 1 \
             --end-month 3 \
             --n-clusters 50 \
             --top-k 100 \
             --top-m 20 \
             --max-df 0.3 \
-            > ../logs/cluster2018_3_out.log
+            > ../logs/cluster2019_3_out.log 2>&1
           # sleep infinity
       volumeMounts:
         - name: data
