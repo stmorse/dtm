@@ -4,6 +4,7 @@ Align
 Save model
 """
 
+import argparse
 import configparser
 import os
 import pickle
@@ -125,14 +126,27 @@ if __name__=="__main__":
     config = configparser.ConfigParser()
     config.read('../config.ini')
     g = config['general']
-    # c = config['align']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--start-year', type=int, required=True)
+    parser.add_argument('--end-year', type=int, required=True)
+    parser.add_argument('--start-month', type=int, required=True)
+    parser.add_argument('--end-month', type=int, required=True)
+    parser.add_argument('--align-dim', type=int, required=True)
+    parser.add_argument('--align-method', type=str, required=True)
+    args = parser.parse_args()
+
+    subpath = os.path.join(g['save_path'], args.subpath)
 
     align_clusters(
-        model_path=os.path.join(g['save_path'], g['run_subpath'], 'models'),
-        tfidf_path=os.path.join(g['save_path'], g['run_subpath'], 'tfidf'),
-        align_path=os.path.join(g['save_path'], g['run_subpath'], 'align'),
-        start_year=int(g['start_year']),
-        end_year=int(g['end_year']),
-        start_month=int(g['start_month']),
-        end_month=int(g['end_month']),
+        model_path=os.path.join(subpath, 'models'),
+        tfidf_path=os.path.join(subpath, 'tfidf'),
+        align_path=os.path.join(subpath, 'align'),
+        start_year=args.start_year,
+        end_year=args.end_year,
+        start_month=args.start_month,
+        end_month=args.end_month,
+        align_dim=args.align_dim,
+        align_method=args.align_method,
     )

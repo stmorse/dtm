@@ -1,20 +1,20 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: embed20203
+  name: embed202012
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   restartPolicy: Never
   containers:
-    - name: embed20203-pod
+    - name: embed202012-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          nvidia.com/gpu: '4'
+          nvidia.com/gpu: '2'
         limits:
-          nvidia.com/gpu: '4'
+          nvidia.com/gpu: '2'
       command: ['/bin/sh']
       args:
         - '-c'
@@ -24,10 +24,10 @@ spec:
           python3 -u 1_embed.py \
             --start-year 2020 \
             --end-year 2020 \
-            --start-month 1 \
-            --end-month 3 \
+            --start-month 10 \
+            --end-month 12 \
             --chunk-size 1000000 \
-            > ../logs/embed20203_out.log 2>&1
+            > ../logs/embed202012_out.log 2>&1
           # sleep infinity
       env:
         - name: HF_HOME
