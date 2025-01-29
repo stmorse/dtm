@@ -95,7 +95,7 @@ def align_clusters(
     print(f'> Saving ...')
     with open(os.path.join(align_path, f'align_model_{align_method}.pkl'), 'wb') as f:
         pickle.dump(model, f)
-    with open(os.path.join(align_path, f'align_model_{align_method}_labels.pkl'), 'wb') as f:
+    with open(os.path.join(align_path, f'align_model_{align_method}_labels.npz'), 'wb') as f:
         np.savez_compressed(f, labels=labels, allow_pickle=False)
 
     # load cluster representations

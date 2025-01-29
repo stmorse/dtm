@@ -25,7 +25,7 @@ def open_compressed(file_path):
     elif file_path.endswith('.zst'):
         # For .zst, return a stream reader
         f = open(file_path, 'rb')  # Open file in binary mode
-        dctx = zstd.ZstdDecompressor()
+        dctx = zstd.ZstdDecompressor(max_window_size=2**31)
         return dctx.stream_reader(f)
     else:
         raise ValueError('Unsupported file extension.')
