@@ -1,3 +1,7 @@
+# this prevents FutureWarning's coming from a sklearn dependency
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import argparse
 import configparser
 import os
@@ -31,8 +35,9 @@ def manova(
     # unique_group_labels, counts = np.unique(align_model.labels_, return_counts=True)
     
     # trim this group a bit
+    labs, cnts = np.unique(align_model.labels_, return_counts=True)
     unique_group_labels = np.array([
-        lab for lab, cnt in np.unique(align_model.labels_, return_counts=True) \
+        lab for lab, cnt in zip(labs, cnts) \
         if lab != -1 and cnt >= min_group_size
     ])
 
@@ -49,7 +54,7 @@ def manova(
 
     # iterate on time period
     for i, (yr, mo) in enumerate(yrmo):
-        print(f'TIME PERIOD: {yr}-{mo:02}')
+        print(f'\nTIME PERIOD: {yr}-{mo:02}')
 
         # get tfidf for this time period
         # contains top vectors for each topic cluster
@@ -101,7 +106,7 @@ def manova(
 
                 # loop each cluster label and append top embeddings to samples dict
                 for cluster_label in cluster_labels:
-                    top_ix = tfidf[cluster_label]['sample_indices']
+                    top_ix = np.array(tfidf[cluster_label]['sample_indices']).astype(int)
                     all_samples_dict[goi].append(
                         embeddings[top_ix, :]
                     )
@@ -132,7 +137,7 @@ def manova(
 
                     for cluster_label in cluster_labels:
                         # these are window wide indices
-                        top_ix = tfidf[cluster_label]['sample_indices']
+                        top_ix = np.array(tfidf[cluster_label]['sample_indices']).astype(int)
 
                         # now get chunk level indices
                         ca, cb = j * chunk_size, (j+1) * chunk_size
@@ -180,7 +185,7 @@ def manova(
             all_samples_labels[goi]
         )
 
-        print(f'   Pillai's Trace: {pillai:.4f}')
+        print(f'   Pillais Trace: {pillai:.4f}')
         print(f'   Approx F-Statistic: {F_stat:.4f}')
         print(f'   p-value: {p_val:.6f}')
 
