@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: embed202112
+  name: embed202212
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   restartPolicy: Never
   containers:
-    - name: embed202112-pod
+    - name: embed202212-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
@@ -22,12 +22,12 @@ spec:
           echo "Running container..."
           cd /sciclone/geograd/stmorse/dtm/src
           python3 -u 1_embed.py \
-            --start-year 2021 \
-            --end-year 2021 \
+            --start-year 2022 \
+            --end-year 2022 \
             --start-month 10 \
             --end-month 12 \
             --chunk-size 1000000 \
-            > ../logs/embed202112_out.log 2>&1
+            > ../logs/embed202212_out.log 2>&1
           # sleep infinity
       env:
         - name: HF_HOME

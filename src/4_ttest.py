@@ -1,3 +1,5 @@
+import argparse
+import configparser
 import os
 import pickle
 
@@ -9,72 +11,63 @@ import dask.array as da
 from utils import manova_pillai_trace
 
 
-def manova():
-    print('loading group labels ...')
+def manova(
+    embed_path: str,
+    align_path: str,
+    tfidf_path: str,
+    start_year: int,
+    end_year: int,
+    min_group_size: int,      # min topic centroids in group    
+):
+    print('Loading alignment model ...')
 
-    with open('/sciclone/geograd/stmorse/reddit/mbkm_50/align/align_model_HDBSCAN_labels.pkl', 'rb') as f:
-        labels = np.load(f)['labels']
-
-    # specify group of interest
-    goi = 6  # israel
+    with open(os.path.join(align_path, 'align_model_HDBSCAN.pkl'), 'rb') as f:
+        align_model = pickle.load(f)
 
     # number of clusters (and therefore number centroids in each time_period)
+    # TODO: don't really want this hardcoded
     Ck = 50
 
-    # idx of group goi
-    # example: 11 -> cluster 11 in time period 0
-    # example: 56 -> cluster 6  in time period 1
-    gidx = np.where(labels == goi)[0]
+    # unique_group_labels, counts = np.unique(align_model.labels_, return_counts=True)
+    
+    # trim this group a bit
+    unique_group_labels = np.array([
+        lab for lab, cnt in np.unique(align_model.labels_, return_counts=True) \
+        if lab != -1 and cnt >= min_group_size
+    ])
 
-    print('gidx: ', gidx)
+    print(f'Testing {len(unique_group_labels)} groups')
 
-    print('total clusters in this group: ', len(gidx))
-
-    # get cluster labels and time period
-    cluster_labels = gidx % Ck
-    time_periods = gidx // Ck
-
-    print('cluster_labels ', cluster_labels)
-    print('time_periods ', time_periods)
-
-    start_year, end_year = 2006, 2008
     yrmo = [(yr, mo) for yr in range(start_year, end_year+1) for mo in range(1,13)]
+    print(f'Total time periods: ', len(yrmo))
 
-    print('total time periods: ', len(yrmo))
+    # for each group idx, all_samples_dict[goi] will be ndarray with 
+    # 100 samples per member topic cluster
+    # all_samples_labels[goi] will be corresponding topic cluster labels
+    all_samples_dict = {goi: [] for goi in unique_group_labels}
+    all_samples_labels = {goi: [] for goi in unique_group_labels}
 
-    # loop on time periods
-    # `all_samples` will be 100-line chunks of sample embeddings corresponding to cluster_labels
-    all_samples = []
+    # iterate on time period
     for i, (yr, mo) in enumerate(yrmo):
-        print('building ', yr, mo)
+        print(f'TIME PERIOD: {yr}-{mo:02}')
 
-        # if no clusters from this group in this time period, skip
-        if i not in time_periods:
-            print('  ..skipping')
-            continue
+        # get tfidf for this time period
+        # contains top vectors for each topic cluster
+        with open(os.path.join(tfidf_path, f'tfidf_{yr}-{mo:02}.pkl'), 'rb') as f:
+            tfidf = pickle.load(f)['tfidf']
 
-        with open(f'/sciclone/geograd/stmorse/reddit/mbkm_50/tfidf/tfidf_{yr}-{mo:02}.pkl', 'rb') as f:
-            tfidf = pickle.load(f)
-
-        # get indices in time_periods where this time period occurs
-        # so we can get the associated label in cluster_label
-        cix = np.where(time_periods == i)[0]
-
-        # loop on cluster label
-        all_sample_idx = []
-        for ix in cix:
-            cl = cluster_labels[ix]
-
-            # get the top 100 closest comments to the centroid in this cluster
-            sample_idx = tfidf['tfidf'][cl]['sample_indices']
-            all_sample_idx.append(sample_idx)
-        all_sample_idx = np.concatenate(all_sample_idx).astype(int)
-
-        # now we need to extract all these embeddings
-        print('  extract embeddings ... ')
+        # slice out group labels for this time period
+        # this is a Ck-long list of actual group labels
+        ga, gb = i * Ck, (i + 1) * Ck
+        window_group_labels = align_model.labels_[ga:gb]
+        
+        # extract all embeddings for this time period
+        print('Extract embeddings ... ')
+        
+        # figure out if embeddings are .npz or .zarr
         filepath, ex = None, None
         for ext in ['.zarr', '.npz']:
-            potential_path = f'/sciclone/geograd/stmorse/reddit/embeddings/embeddings_{yr}-{mo:02}{ext}'
+            potential_path = os.path.join(embed_path, f'embeddings_{yr}-{mo:02}{ext}')
             if os.path.exists(potential_path):
                 filepath = potential_path
                 ex = ext
@@ -84,53 +77,135 @@ def manova():
                 f'No file found for {yr}-{mo} with .zarr or .npz'
             )
             return
+
+        # if npz, load the whole thing and extract indices for each goi (easy)
+        # if zarr, loop over each chunk and append indices for each goi
                 
         embeddings = []
+
         if ex=='.npz':
+            print('> Processing (single) file ... ')
+
             with open(filepath, 'rb') as f:
                 embeddings = np.load(f)['embeddings']
+
+            for goi in unique_group_labels:
+                # cluster labels corresponding to clusters of this group (goi) for this time period
+                # ex. [4, 6] means cluster 4 and 6 for this time period
+                # because in each window, group_labels index is 0-49
+                cluster_labels = np.where(window_group_labels == goi)[0]
+
+                # possible there are no clusters for this group in this time period
+                if len(cluster_labels)==0:
+                    continue
+
+                # loop each cluster label and append top embeddings to samples dict
+                for cluster_label in cluster_labels:
+                    top_ix = tfidf[cluster_label]['sample_indices']
+                    all_samples_dict[goi].append(
+                        embeddings[top_ix, :]
+                    )
+                    all_samples_labels[goi].append(
+                        [cluster_label] * len(top_ix)
+                    )
+            
+        # data too big to hold all embeddings for the time period in memory
+        # so we extract top indices within each chunk
+        # this involves multiple passes over tfidf and group labels (fast)
+        # but one pass over embeddings (slow)
         elif ex=='.zarr':
+            print('> Processing chunked file ... ')
+
             ddata = da.from_zarr(filepath)
-            embeddings = []
-            for chunk in ddata.to_delayed().ravel():
+            
+            for j, chunk in enumerate(ddata.to_delayed().ravel()):
                 arr = chunk.compute()
-                embeddings.append(arr)
-            embeddings = np.vstack(embeddings)
-        else:
-            print('should not get here')
-            return
-        print('  embeddings ', embeddings.shape)
+                chunk_size = arr.shape[0]
 
-        all_samples.append(embeddings[all_sample_idx,:])
+                print(f'> Chunk {j} (size {chunk_size}) ...')
+                
+                for goi in unique_group_labels:
+                    cluster_labels = np.where(window_group_labels == goi)[0]
 
-    all_samples = np.vstack(all_samples)
-    print('all_samples ', all_samples.shape)
+                    if len(cluster_labels) == 0:
+                        continue
 
-    # project to d=10
+                    for cluster_label in cluster_labels:
+                        # these are window wide indices
+                        top_ix = tfidf[cluster_label]['sample_indices']
+
+                        # now get chunk level indices
+                        ca, cb = j * chunk_size, (j+1) * chunk_size
+                        top_zix = np.where((top_ix >= ca) & (top_ix < cb))[0]
+                        top_cix = top_ix[top_zix]
+
+                        # now append to samples dict
+                        all_samples_dict[goi].append(
+                            arr[top_cix, :]
+                        )
+                        all_samples_labels[goi].append(
+                            [cluster_label] * len(top_cix)
+                        )
+
+    # end time period loop
+
+    # now all_samples_dict and all_samples_labels has everything we need
+    # need to concat into single ndarray's per group
+    # and project down
     u_embedder = umap.UMAP(
-        n_neighbors=15,
-        n_components=10,
-        metric='euclidean',
-        init='spectral',
-        min_dist=0.1,
-        spread=1.0
-    )
-    asu = u_embedder.fit_transform(all_samples)
-    print('dim reduce shape ', asu.shape)
+            n_neighbors=15,
+            n_components=10,
+            metric='euclidean',
+            init='spectral',
+            min_dist=0.1,
+            spread=1.0
+        )
+    
+    print(f'Preparing all samples ... ')
+    for goi in unique_group_labels:
+        print(f'> Processing group {goi} ... ')
+        all_samples_dict[goi] = np.vstack(all_samples_dict[goi])
+        all_samples_labels[goi] = np.concatenate(all_samples_labels[goi]).astype(int)
 
-    # now we expand cluster labels (use gidx) to be same size as all_samples
-    all_samples_labels = np.repeat(gidx, 100)
-    print('all_samples_labels ', all_samples_labels.shape)
+        all_samples_dict[goi] = u_embedder.fit_transform(
+            all_samples_dict[goi]
+        )
 
-    # compute manova
-    print('computing manova ...')
-    pillai, F_stat, p_val = manova_pillai_trace(asu, all_samples_labels)
+    print(f'Computing MANOVA ... ')
+    for goi in unique_group_labels:
+        # compute manova
+        print(f'> Group {goi}: ...')
+        pillai, F_stat, p_val = manova_pillai_trace(
+            all_samples_dict[goi], 
+            all_samples_labels[goi]
+        )
 
-    print(f"Pillai's Trace: {pillai:.4f}")
-    print(f"Approx F-Statistic: {F_stat:.4f}")
-    print(f"p-value: {p_val:.6f}")
+        print(f'   Pillai's Trace: {pillai:.4f}')
+        print(f'   Approx F-Statistic: {F_stat:.4f}')
+        print(f'   p-value: {p_val:.6f}')
 
 
 if __name__=="__main__":
     os.environ['PYTHONUNBUFFERED'] = '1'
-    manova()
+
+    config = configparser.ConfigParser()
+    config.read('../config.ini')
+    g = config['general']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--start-year', type=int, required=True)
+    parser.add_argument('--end-year', type=int, required=True)
+    parser.add_argument('--min-group-size', type=int, required=True)
+    args = parser.parse_args()
+
+    subpath = os.path.join(g['save_path'], args.subpath)
+    
+    manova(
+        embed_path=g['embed_path'],
+        align_path=os.path.join(subpath, 'align'),
+        tfidf_path=os.path.join(subpath, 'tfidf'),
+        start_year=int(args.start_year),
+        end_year=int(args.end_year),
+        min_group_size=int(args.min_group_size),
+    )
