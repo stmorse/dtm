@@ -81,7 +81,7 @@ def align_clusters(
             min_cluster_size=3,
             min_samples=None,       # None defaults to min_cluster_size
             cluster_selection_epsilon=0.0,
-            max_cluster_size=20,
+            max_cluster_size=100,
             metric='euclidean',
             store_centers='both',   # centroid and medoid
         )
@@ -145,7 +145,7 @@ if __name__=="__main__":
     align_clusters(
         model_path=os.path.join(subpath, 'models'),
         tfidf_path=os.path.join(subpath, 'tfidf'),
-        align_path=os.path.join(subpath, 'align'),
+        align_path=os.path.join(subpath, 'align/max_100'),
         start_year=args.start_year,
         end_year=args.end_year,
         start_month=args.start_month,
