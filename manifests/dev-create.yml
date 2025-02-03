@@ -14,12 +14,12 @@ spec:
       resources:
         requests:
           memory: '64Gi'
-          nvidia.com/gpu: '1'
-          #cpu: '8'
+          # nvidia.com/gpu: '1'
+          cpu: '16'
         limits:
           memory: '64Gi'
-          nvidia.com/gpu: '1'
-          #cpu: '8'
+          # nvidia.com/gpu: '1'
+          cpu: '16'
       command: ['/bin/sh']
       args:
         - '-c'

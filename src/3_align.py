@@ -4,6 +4,10 @@ Align
 Save model
 """
 
+# this prevents FutureWarning's coming from a sklearn dependency
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import argparse
 import configparser
 import os
@@ -13,7 +17,6 @@ import time
 import numpy as np
 import umap
 from sklearn.cluster import HDBSCAN
-# import joblib
 
 def align_clusters(
     model_path: str,
@@ -113,7 +116,7 @@ def align_clusters(
     results = 'Cluster (Time): Keywords\n\n'
     for k in range(n_clusters):
         idx = np.where(labels == k)[0]
-        results += f'Group: {idx}\n'
+        results += f'Group: {k} ({idx})\n'
         for x in idx:
             results += f'{x} ({x // Ck}): {T[x][:10]}\n'
         results += '\n'
@@ -131,10 +134,10 @@ if __name__=="__main__":
     parser.add_argument('--subpath', type=str, required=True)
     parser.add_argument('--start-year', type=int, required=True)
     parser.add_argument('--end-year', type=int, required=True)
-    parser.add_argument('--start-month', type=int, required=True)
-    parser.add_argument('--end-month', type=int, required=True)
-    parser.add_argument('--align-dim', type=int, required=True)
-    parser.add_argument('--align-method', type=str, required=True)
+    parser.add_argument('--start-month', type=int, default=1, required=False)
+    parser.add_argument('--end-month', type=int, default=12, required=False)
+    parser.add_argument('--align-dim', type=int, default=10, required=False)
+    parser.add_argument('--align-method', type=str, default="HDBSCAN", required=False)
     args = parser.parse_args()
 
     subpath = os.path.join(g['save_path'], args.subpath)
