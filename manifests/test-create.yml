@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ttest
+spec:
+  securityContext:
+    runAsUser: 270999
+    runAsGroup: 1132
+  restartPolicy: Never
+  containers:
+    - name: ttest-pod
+      image: ghcr.io/stmorse/dtm:latest
+      resources:
+        requests:
+          memory: '128Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '24'
+        limits:
+          memory: '128Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '24'
+      command: ['/bin/sh']
+      args:
+        - '-c'
+        - |
+          echo "Running container..."
+          cd /sciclone/geograd/stmorse/dtm/src
+          python3 -u 4_ttest.py \
+            --subpath mbkm_50 \
+            --start-year 2006 \
+            --end-year 2022 \
+            --min-group-size 20 \
+            > ../logs/ttest_out.log 2>&1
+          # sleep infinity
+      volumeMounts:
+        - name: data
+          mountPath: /sciclone/data10/twford/reddit/reddit
+        - name: results
+          mountPath: /sciclone/geograd/stmorse
+  volumes:
+    - name: data
+      nfs:
+        server: 128.239.56.30
+        path: /sciclone/data10/twford/reddit/reddit
+    - name: results
+      nfs:
+        server: 128.239.59.144
+        path: /sciclone/geograd/stmorse

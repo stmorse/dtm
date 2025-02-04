@@ -76,3 +76,46 @@ def manova_pillai_trace(X, labels):
     p_value = 1 - f.cdf(F_stat, df1, df2)
     
     return pillai, F_stat, p_value
+
+
+def hotelling_t2_test(X, Y):
+    """
+    Perform a two-sample Hotelling's T-squared test.
+    
+    Parameters:
+        X: np.ndarray of shape (n1, p) - First sample group (n1 observations, p variables)
+        Y: np.ndarray of shape (n2, p) - Second sample group (n2 observations, p variables)
+    
+    Returns:
+        T2: Hotelling's T-squared statistic
+        F_value: Corresponding F-statistic
+        p_value: p-value for the test
+    """
+    X, Y = np.asarray(X), np.asarray(Y)
+    n1, p = X.shape
+    n2, _ = Y.shape
+    
+    # Compute sample means
+    x_bar = np.mean(X, axis=0)
+    y_bar = np.mean(Y, axis=0)
+    
+    # Compute sample covariance matrices
+    S1 = np.cov(X, rowvar=False, ddof=1)
+    S2 = np.cov(Y, rowvar=False, ddof=1)
+    
+    # Compute pooled covariance matrix
+    Sp = ((n1 - 1) * S1 + (n2 - 1) * S2) / (n1 + n2 - 2)
+    
+    # Compute Hotelling's T-squared statistic
+    mean_diff = x_bar - y_bar
+    Sp_inv = np.linalg.inv(Sp)  # Inverse of pooled covariance matrix
+    T2 = (n1 * n2) / (n1 + n2) * mean_diff.T @ Sp_inv @ mean_diff
+    
+    # Convert to F-statistic
+    F_value = ((n1 + n2 - p - 1) / ((n1 + n2 - 2) * p)) * T2
+    df1, df2 = p, (n1 + n2 - p - 1)
+    
+    # Compute p-value
+    p_value = 1 - f.cdf(F_value, df1, df2)
+    
+    return T2, F_value, p_value

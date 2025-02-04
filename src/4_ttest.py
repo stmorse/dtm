@@ -9,8 +9,9 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
-import umap
+# import umap
 import dask.array as da
+from sklearn.decomposition import PCA
 
 from utils import manova_pillai_trace
 
@@ -25,7 +26,7 @@ def manova(
 ):
     print('Loading alignment model ...')
 
-    with open(os.path.join(align_path, 'align_model_HDBSCAN.pkl'), 'rb') as f:
+    with open(os.path.join(align_path, 'max_100/align_model_HDBSCAN.pkl'), 'rb') as f:
         align_model = pickle.load(f)
 
     # number of clusters (and therefore number centroids in each time_period)
@@ -157,14 +158,14 @@ def manova(
     # now all_samples_dict and all_samples_labels has everything we need
     # need to concat into single ndarray's per group
     # and project down
-    u_embedder = umap.UMAP(
-            n_neighbors=15,
-            n_components=10,
-            metric='euclidean',
-            init='spectral',
-            min_dist=0.1,
-            spread=1.0
-        )
+    # u_embedder = umap.UMAP(
+    #         n_neighbors=15,
+    #         n_components=10,
+    #         metric='euclidean',
+    #         init='spectral',
+    #         min_dist=0.1,
+    #         spread=1.0
+    #     )
     
     print(f'Preparing all samples ... ')
     for goi in unique_group_labels:
@@ -172,7 +173,10 @@ def manova(
         all_samples_dict[goi] = np.vstack(all_samples_dict[goi])
         all_samples_labels[goi] = np.concatenate(all_samples_labels[goi]).astype(int)
 
-        all_samples_dict[goi] = u_embedder.fit_transform(
+        # all_samples_dict[goi] = u_embedder.fit_transform(
+        #     all_samples_dict[goi]
+        # )
+        all_samples_dict[goi] = PCA(n_components=10).fit_transform(
             all_samples_dict[goi]
         )
 
