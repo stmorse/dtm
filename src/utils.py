@@ -78,6 +78,59 @@ def manova_pillai_trace(X, labels):
     return pillai, F_stat, p_value
 
 
+def hotelling_t2_test_single(X, mu0=None):
+    """
+    Conduct a one-sample Hotelling T^2 test for the hypothesis H0: E[X] = mu0.
+    
+    Parameters
+    ----------
+    X : (n, d) array-like
+        The sample data. Each row is an observation in R^d.
+    mu0 : (d,) array-like or None
+        The hypothesized mean vector. If None, tests against a zero vector.
+        
+    Returns
+    -------
+    T2_stat : float
+        The Hotelling T^2 statistic.
+    F_stat : float
+        The equivalent F-statistic.
+    p_value : float
+        The p-value from the F-distribution.
+    """
+    X = np.asarray(X, dtype=float)
+    n, d = X.shape
+    
+    if mu0 is None:
+        mu0 = np.zeros(d)
+    else:
+        mu0 = np.asarray(mu0, dtype=float)
+        if mu0.shape != (d,):
+            raise ValueError("mu0 must be of shape (d,).")
+    
+    # Sample mean
+    X_bar = X.mean(axis=0)
+
+    # Sample covariance (unbiased) and inverse
+    S = np.cov(X, rowvar=False)  # shape (d, d)
+    # Might need a pseudo-inverse if S is singular in high dimensions
+    S_inv = np.linalg.inv(S)
+    
+    # Hotelling T^2
+    diff = X_bar - mu0
+    T2_stat = n * diff @ S_inv @ diff
+    
+    # Convert to F-statistic
+    # F ~ F(d, n-d) under H0
+    F_stat = ((n - d) / (d * (n - 1))) * T2_stat
+    
+    # p-value
+    p_value = 1 - f.cdf(F_stat, d, n - d)
+    
+    return T2_stat, F_stat, p_value
+
+
+
 def hotelling_t2_test(X, Y):
     """
     Perform a two-sample Hotelling's T-squared test.
