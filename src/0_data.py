@@ -1,7 +1,10 @@
 import io
 import os
+import time
+
 import zipfile
 import numpy as np
+import pandas as pd
 import zarr
 
 # def count_npz_rows(npz_path):
@@ -18,8 +21,6 @@ import zarr
 #         arr = np.load(f)['embeddings']
 #         return arr.shape[0]
 #     # return total
-
-
 
 def count_npz_rows(npz_path):
     total = 0
@@ -49,11 +50,12 @@ def count_zarr_rows(zarr_path):
 if __name__=="__main__":
     base_path = '/sciclone/geograd/stmorse/reddit/embeddings'
 
-    years = range(2018, 2023)
+    years = range(2006, 2023)
     months = [f'{mo:02}' for mo in range(1,13)]
     yrmo = [(yr, mo) for yr in years for mo in months]
 
     total = 0
+    totals = []
     for year, month in yrmo:
         # path to compressed file
         file_path = None
@@ -76,7 +78,10 @@ if __name__=="__main__":
         print(f'{year}-{month}: {subtotal}')
 
         total += subtotal
+        totals.append([year, month, subtotal])
 
+    totals = pd.DataFrame(totals, columns=['year', 'month', 'subtotal'])
+    totals.to_csv('/sciclone/geograd/stmorse/reddit/totals.csv', index=False)
     print(f'GRAND TOTAL: {total}')
 
 
