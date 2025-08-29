@@ -1,35 +1,37 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dev
+  name: topic-gen
+  namespace: fais-1
 spec:
   securityContext:
     runAsUser: 270999
-    runAsGroup: 1132
+    runAsGroup: 50038
+    fsGroup: 1134
   containers:
-    - name: dev-pod
+    - name: topic-gen-pod
       #image: docker.io/pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
       image: ghcr.io/stmorse/dtm:latest
       # image: docker.io/busybox
       resources:
         requests:
           memory: '64Gi'
-          nvidia.com/gpu: '1'
-          cpu: '4'
+          # nvidia.com/gpu: '1'
+          cpu: '8'
         limits:
           memory: '64Gi'
-          nvidia.com/gpu: '1'
-          cpu: '4'
-      command: ['/bin/bash']
+          # nvidia.com/gpu: '1'
+          cpu: '8'
+      command: ['/bin/sh']
       args:
         - '-c'
         - |
           echo "Running container..."   # pod is for dev'ing scripts, run indef
-          cd /sciclone/geograd/stmorse/dtm
+          # cd /sciclone/geograd/stmorse/dtm
           sleep infinity
       env:
         - name: HF_HOME
-          value: '/sciclone/home/stmorse/.cache/huggingface'
+          value: '/sciclone/home/stmorse/.cache/huggingface/hub'
       volumeMounts:
         - name: home
           mountPath: /sciclone/home/stmorse

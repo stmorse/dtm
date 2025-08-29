@@ -81,68 +81,7 @@ def cluster(args):
     # --- USING NPZ ---
 
     else:
-        with open(os.path.join(args.embed_path, f'embeddings_{year}-{month}.npz'), 'rb') as f:
-            embeddings = np.load(f)['embeddings']
-        L = len(embeddings)
-        M = L // chunk_size   # num chunks
-        print(f'Total {L}.  Chunks: {M}')
-
-        # fit the model to P versions of the embeddings
-        for p in range(args.n_resamples):
-            
-            # reinitialize a model
-            model = MiniBatchKMeans(
-                n_clusters=n_clusters, 
-                random_state=KMEANS_SEED,
-                init='k-means++',  # k-means++ is default
-                n_init=1000,
-                batch_size=L,
-                init_size=L,
-                # max_iter=100,
-                # max_no_improvement=None,
-            )
-            # model = KMeans(
-            #     n_clusters=n_clusters,
-            #     random_state=KMEANS_SEED,
-            #     n_init=1,
-
-            # )
-
-            # first time, original order, other times, permuted
-            idx = np.arange(L)
-            if p > 0:
-                idx = np.random.permutation(L)
-
-            # --- FIT ---
-
-            # partial_fit over all chunks
-            # print(f'Fitting model (size: {L}) (chunks: {M+1}) ...')
-            # for i in range(0, M):
-            #     j = i * chunk_size
-            #     chunk = embeddings[idx[j]:idx[j + chunk_size]]
-
-            #     print(f'> Fitting chunk {i} ({len(chunk)}) ... ({time.time()-t0:.2f})')
-            #     model.partial_fit(chunk)
-            #     del chunk
-            #     gc.collect()
-
-            # # fit on "leftovers"
-            # fidx = M * chunk_size
-            # if fidx < L:
-            #     leftovers = embeddings[idx[fidx:]]
-            #     model.partial_fit(leftovers)
-            #     del leftovers
-            #     gc.collect()
-
-            print(f'Fitting model (size: {L}) ...')
-            model.fit(embeddings[idx,:])
-
-            # save just centroids
-            cc_name = f'model_cc_{year}-{month}_{p}.npz'
-            with open(os.path.join(model_path, cc_name), 'wb') as f:
-                np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
-
-            print(f'> Centroids saved to {cc_name} ({time.time()-t0:.2f})')
+        pass
 
 
 def align(args):
