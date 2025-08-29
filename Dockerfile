@@ -7,6 +7,10 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # make sure umap will work with this version of python
 # RUN pip install --upgrade --force-reinstall numba llvmlite umap-learn
 
+# attempted numba cache fix (for umap)
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+RUN mkdir -p "$NUMBA_CACHE_DIR" && chmod 0777 "$NUMBA_CACHE_DIR"
+
 WORKDIR /
 
 
