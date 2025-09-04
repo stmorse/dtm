@@ -1,53 +1,60 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cluster20219b
+  name: cluster2015
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   restartPolicy: Never
+  nodeSelector:
+    kubernetes.io/hostname: grace.sciclone.wm.edu
   containers:
-    - name: cluster20219b-pod
+    - name: cluster2015-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '128Gi'
+          memory: '400Gi'
           # nvidia.com/gpu: '1'
-          cpu: '24'
+          cpu: '12'
         limits:
-          memory: '128Gi'
+          memory: '400Gi'
           # nvidia.com/gpu: '1'
-          cpu: '24'
+          cpu: '12'
       command: ['/bin/sh']
       args:
         - '-c'
         - |
           echo "Running container..."
-          cd /sciclone/geograd/stmorse/dtm/src
-          python3 -u 2a_cluster_s.py \
-            --subpath mbkm_50 \
-            --start-year 2021 \
-            --end-year 2021 \
-            --start-month 9 \
-            --end-month 9 \
+          cd /sciclone/home/stmorse/projects/dtm/src
+          python3 -u 2c_cluster.py \
+            --subpath km/km50 \
+            --start-year 2015 \
+            --end-year 2015 \
+            --start-month 1 \
+            --end-month 12 \
             --n-clusters 50 \
-            --top-k 100 \
-            --top-m 20 \
-            --max-df 0.3 \
-            > ../logs/cluster20219b_out.log 2>&1
+            --model km
+            > ../logs/cluster2015.log 2>&1
           # sleep infinity
       volumeMounts:
+        - name: home
+          mountPath: /sciclone/home/stmorse
         - name: data
           mountPath: /sciclone/data10/twford/reddit/reddit
         - name: results
-          mountPath: /sciclone/geograd/stmorse
+          mountPath: /sciclone/proj-ds/geograd/stmorse
   volumes:
+    - name: home
+      nfs:
+        server: 128.239.56.166
+        path: /sciclone/home/stmorse
     - name: data
       nfs:
         server: 128.239.56.30
         path: /sciclone/data10/twford/reddit/reddit
     - name: results
       nfs:
+        # server: 192.168.59.144  # IB
         server: 128.239.59.144
-        path: /sciclone/geograd/stmorse
+        path: /sciclone/proj-ds/geograd/stmorse

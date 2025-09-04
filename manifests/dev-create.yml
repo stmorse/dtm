@@ -6,6 +6,27 @@ spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
+  affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - gu07.sciclone.wm.edu
+                - gu08.sciclone.wm.edu
+                - gu09.sciclone.wm.edu
+                - gu10.sciclone.wm.edu
+                - gu11.sciclone.wm.edu
+                - gu12.sciclone.wm.edu
+                - gu13.sciclone.wm.edu
+                - gu14.sciclone.wm.edu
+                - gu15.sciclone.wm.edu
+                - gu16.sciclone.wm.edu
+                - gu17.sciclone.wm.edu
+                - gu18.sciclone.wm.edu
+                - gu19.sciclone.wm.edu
   containers:
     - name: dev-pod
       #image: docker.io/pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
@@ -30,6 +51,8 @@ spec:
       env:
         - name: HF_HOME
           value: '/sciclone/home/stmorse/.cache/huggingface'
+        - name: NUMBA_CACHE_DIR   # for umap
+          value: /tmp/numba_cache
       volumeMounts:
         - name: home
           mountPath: /sciclone/home/stmorse

@@ -1,5 +1,68 @@
+import json
+
+import bz2
+import lzma
+import zstandard as zstd
+
 import numpy as np
 from scipy.stats import f
+
+
+# ----- FILE READING -----
+
+# used by clustering
+
+def open_compressed(file_path):
+    if file_path.endswith('.bz2'):
+        return bz2.BZ2File(file_path, 'rb')
+    elif file_path.endswith('.xz'):
+        return lzma.open(file_path, 'rb')
+    elif file_path.endswith('.zst'):
+        # For .zst, return a stream reader
+        f = open(file_path, 'rb')  # Open file in binary mode
+        dctx = zstd.ZstdDecompressor(max_window_size=2**31)
+        return dctx.stream_reader(f)
+    else:
+        raise ValueError('Unsupported file extension.')
+
+def read_sentences(file_path, idx_to_cluster):
+    """
+    Read JSON entries from a compressed file, extract the 'body' field,
+    and yield if in the idx_to_cluster dict
+    """
+    byte_buffer = b""  # For handling partial lines in `.zst` files
+
+    with open_compressed(file_path) as f:
+        # Iterate over the file
+        i = 0
+        for chunk in iter(lambda: f.read(8192), b""):  # Read file in binary chunks
+            byte_buffer += chunk
+
+            # Process each line in the byte buffer
+            while b"\n" in byte_buffer:
+                line, byte_buffer = byte_buffer.split(b"\n", 1)
+
+                # Parse JSON and process the 'body' field
+                entry = json.loads(line.decode("utf-8"))
+
+                if 'body' not in entry or entry['author'] == '[deleted]':
+                    continue
+
+                # Truncate long 'body' fields
+                body = entry['body']
+                if len(body) > 2000:
+                    body = body[:2000]
+
+                if i in idx_to_cluster:
+                    # we have a candidate
+                    c = idx_to_cluster[i]
+                    yield c, body
+
+                # increment i whether we yielded or not
+                i += 1
+
+
+# ----- STATS TESTING ----- (unused in main pipeline)
 
 def manova_pillai_trace(X, labels):
     """

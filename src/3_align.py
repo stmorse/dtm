@@ -90,7 +90,7 @@ def align_clusters(
         labels = model.labels_
         n_clusters = np.amax(labels)
     else:
-        print(f'Error: align method ({align_method}) not supported. Exiting ...')
+        print(f'Error: align method ({align_method}) not supported.')
         return
 
     print(f'> Complete. Num clusters: {n_clusters}')
@@ -142,10 +142,13 @@ if __name__=="__main__":
 
     subpath = os.path.join(g['save_path'], args.subpath)
 
+    # align is only new path
+    os.makedirs(os.path.join(subpath, 'align'), exist_ok=True)
+
     align_clusters(
         model_path=os.path.join(subpath, 'models'),
         tfidf_path=os.path.join(subpath, 'tfidf'),
-        align_path=os.path.join(subpath, 'align/max_100'),
+        align_path=os.path.join(subpath, 'align'),
         start_year=args.start_year,
         end_year=args.end_year,
         start_month=args.start_month,
