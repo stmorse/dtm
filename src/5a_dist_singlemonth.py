@@ -24,13 +24,48 @@ import dask.array as da
 
 KMEANS_SEED = 313
 
+def main():
+    config = configparser.ConfigParser()
+    config.read('../config.ini')
+    g = config['general']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sub_path', type=str, required=True)
+    parser.add_argument('--year', type=int, required=True)
+    parser.add_argument('--month', type=int, required=True)
+    parser.add_argument('--n_clusters', type=int, default=50)
+    parser.add_argument('--n_resamples', type=int, default=10)
+    parser.add_argument('--align_dim', type=int, default=10)
+    parser.add_argument('--use_zarr', type=int, default=1)
+    parser.add_argument('--model', type=str, default="mbkm")
+    parser.add_argument('--make_clusters', type=int, default=1)
+    args = parser.parse_args()
+
+    args.sub_path = os.path.join(g['save_path'], args.sub_path)
+
+    # ensure directories exist
+    for subdir in ['models', 'align']:
+        if not os.path.exists(os.path.join(args.sub_path, subdir)):
+            os.makedirs(os.path.join(args.sub_path, subdir), exist_ok=True)
+
+    # augment args with paths
+    setattr(args, "embed_path", g["embed_path"])
+    setattr(args, "model_path", os.path.join(args.sub_path, 'models'))
+    setattr(args, "align_path", os.path.join(args.sub_path, 'align'))
+
+    print(f'CPU count              : {os.cpu_count()}')
+    print(f'Time period            : {args.year}, {args.month}')
+    print(f'Saving results to path : {args.sub_path}\n')
+
+    if args.make_clusters==1:
+        cluster(args)
+    align(args)
+
 def cluster(args):
     t0 = time.time()
     year, month = args.year, f'{args.month:02}'
     n_clusters = args.n_clusters
-    chunk_size = args.chunk_size
-    model_path = os.path.join(args.sub_path, 'models')
-    # label_path = os.path.join(args.sub_path, 'labels')
+    model_path = args.model_path
 
     # ----
     # FIT / LABEL
@@ -43,35 +78,70 @@ def cluster(args):
     
     # --- USING ZARR ---
 
-    if args.use_zarr:
+    if args.use_zarr == 1:
         # load data
         ddata = da.from_zarr(os.path.join(args.embed_path, f'embeddings_{year}-{month}.zarr'))
         K = ddata.shape[0]
         print(f'Total {K} embeddings in {len(ddata.chunks[0])} chunks')
 
+        cc = None
         for p in range(args.n_resamples):
             print(f'\nFitting sample {p} ... ({time.time()-t0:.2f})')
             
             # --- FIT ---
 
-            # reinitialize a model
-            model = MiniBatchKMeans(n_clusters=n_clusters, random_state=KMEANS_SEED)
+            if args.model == "mbkm":
+                # reinitialize a model
+                model = MiniBatchKMeans(
+                    n_clusters=args.n_clusters,
+                    init="k-means++" if cc is None else cc,
+                    random_state=KMEANS_SEED
+                )
 
-            i = 0
-            for chunk in ddata.to_delayed().ravel():
-                arr = chunk.compute()
-                L = arr.shape[0]
-                print(f'> Fitting chunk {i} ({L}) ... ({time.time()-t0:.2f})')
+                i = 0
+                for chunk in ddata.to_delayed().ravel():
+                    arr = chunk.compute()
+                    L = arr.shape[0]
+                    print(f'> Fitting chunk {i} ({L}) ... ({time.time()-t0:.2f})')
 
-                # first time, all data, other times, sampled with replacement
-                idx = np.arange(L)
-                if p > 0:
-                    idx = np.random.permutation(L)
+                    # first time, all data, other times, sampled with replacement
+                    idx = np.arange(L)
+                    if p > 0:
+                        idx = np.random.permutation(L)
 
-                model.partial_fit(arr[idx,:])
-                i += 1
+                    model.partial_fit(arr[idx,:])
+                    i += 1
+
+            elif args.model == "km":
+                model = KMeans(
+                    n_clusters=args.n_clusters, 
+                    init="k-means++" if cc is None else cc,
+                    random_state=KMEANS_SEED,
+                    algorithm="lloyd"
+                )
+
+                embeddings = []
+                i = 0
+                for chunk in ddata.to_delayed().ravel():
+                    arr = chunk.compute()
+                    L = arr.shape[0]
+                    
+                    print(f'> Consolidating chunk {i} ({L}) ... ({time.time()-t0:.2f})')
+                    
+                    idx = np.arange(L)
+                    if p > 0:
+                        idx = np.random.permutation(L)
+                    embeddings.append(arr[idx,:])
+                    i += 1
+                embeddings = np.vstack(embeddings)
+
+                print(f"> Clustering (KM) ... ({time.time()-t0:.2f})")
+                model.fit(embeddings)
+            else:
+                raise ValueError(f"Model not recognized ({args.model}).")
 
             # save just centroids
+            cc = model.cluster_centers_.copy()
             cc_name = f'model_cc_{year}-{month}_{p}.npz'
             with open(os.path.join(model_path, cc_name), 'wb') as f:
                 np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
@@ -90,8 +160,8 @@ def align(args):
     year, month = args.year, f'{args.month:02}'
     Ck = args.n_clusters
     align_dim = args.align_dim
-    model_path = os.path.join(args.sub_path, 'models')
-    align_path = os.path.join(args.sub_path, 'align')
+    model_path = args.model_path
+    align_path = args.align_path
 
     t0 = time.time()
 
@@ -166,31 +236,5 @@ def align(args):
 
 
 if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config.read('../config.ini')
-    g = config['general']
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', type=str, default=g['data_path']) # raw data
-    parser.add_argument('--embed_path', type=str, default=g['embed_path'])
-    parser.add_argument('--sub_path', type=str, required=True)
-    parser.add_argument('--year', type=int, required=True)
-    parser.add_argument('--month', type=int, required=True)
-    parser.add_argument('--n_clusters', type=int, default=50)
-    parser.add_argument('--n_resamples', type=int, default=10)
-    parser.add_argument('--chunk_size', type=int, default=100000)
-    parser.add_argument('--align_dim', type=int, default=10)
-    parser.add_argument('--use_zarr', type=int, default=0)
-    parser.add_argument('--make_clusters', type=int, default=1)
-    args = parser.parse_args()
-
-    args.sub_path = os.path.join(g['save_path'], args.sub_path)
-
-    print(f'CPU count              : {os.cpu_count()}')
-    print(f'Time period            : {args.year}, {args.month}')
-    print(f'Saving results to path : {args.sub_path}\n')
-
-    if args.make_clusters==1:
-        cluster(args)
-    align(args)
+    main()
 

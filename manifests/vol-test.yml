@@ -1,11 +1,14 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dev
+  name: vol
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
+  restartPolicy: Never
+  # nodeSelector:
+  #   kubernetes.io/hostname: grace.sciclone.wm.edu
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -23,36 +26,28 @@ spec:
             - gu13.sciclone.wm.edu
             - gu14.sciclone.wm.edu
             - gu15.sciclone.wm.edu
-            # - gu16.sciclone.wm.edu
+            - gu16.sciclone.wm.edu
             - gu17.sciclone.wm.edu
-            # - gu18.sciclone.wm.edu
+            - gu18.sciclone.wm.edu
             - gu19.sciclone.wm.edu
   containers:
-    - name: dev-pod
-      #image: docker.io/pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
-      image: ghcr.io/stmorse/dtm:latest
-      # image: docker.io/busybox
+    - name: vol-pod
+      image: busybox
       resources:
         requests:
-          memory: '64Gi'
-          nvidia.com/gpu: '1'
-          cpu: '4'
+          memory: '1Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '1'
         limits:
-          memory: '64Gi'
-          nvidia.com/gpu: '1'
-          cpu: '4'
-      command: ['/bin/bash']
+          memory: '1Gi'
+          # nvidia.com/gpu: '1'
+          cpu: '1'
+      command: ['/bin/sh']
       args:
         - '-c'
         - |
-          echo "Running container..."   # pod is for dev'ing scripts, run indef
-          cd /sciclone/geograd/stmorse/dtm
+          echo "Running container..."
           sleep infinity
-      env:
-        - name: HF_HOME
-          value: '/sciclone/home/stmorse/.cache/huggingface'
-        - name: NUMBA_CACHE_DIR   # for umap
-          value: /tmp/numba_cache
       volumeMounts:
         - name: home
           mountPath: /sciclone/home/stmorse
@@ -72,4 +67,5 @@ spec:
     - name: results
       nfs:
         server: 192.168.59.144  # IB
+        # server: 128.239.59.144
         path: /sciclone/proj-ds/geograd/stmorse
