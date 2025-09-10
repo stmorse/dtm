@@ -1,0 +1,125 @@
+# ── wrapper script ───────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clusterk-sweep
+  namespace: fais-1
+data:
+  run.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    IDX="${JOB_IDX:?}"
+
+    # parameter grid
+    # A=(30 35 40 45 50 55 60 65 70 75 80 85 90 95 100)
+    A=(5 10 15 20 25 105 110 115 120 125 130 135 140 145 150)
+
+    # map index to combo  
+    A_IDX=$(( IDX % ${#A[@]} ))
+
+    a_val="${A[A_IDX]}"
+
+    ARGS=(
+      --subpath      "km/kmm"
+      --special      $a_val
+      --start-year   2017
+      --end-year     2017
+      --start-month  3
+      --end-month    3
+      --n-clusters   $a_val
+      --tfidf        0
+    )
+
+    echo "> running combo #$IDX -> ${ARGS[*]}"
+    cd /sciclone/home/stmorse/projects/dtm/src
+    exec python -u 2c_cluster.py "${ARGS[@]}" > "../logs/ck_$a_val.log" 2>&1
+---
+# ---- job ----
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-grid
+  namespace: fais-1
+spec:
+  # ttlSecondsAfterFinished: 300   # job (and pods) deleted 5 min after finish
+  completions: 15        # total combos
+  parallelism: 3         # num to run at once
+  completionMode: Indexed
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 270999 
+        runAsGroup: 50038
+        fsGroup: 1134
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - gu07.sciclone.wm.edu
+                - gu08.sciclone.wm.edu
+                - gu09.sciclone.wm.edu
+                - gu10.sciclone.wm.edu
+                - gu11.sciclone.wm.edu
+                - gu12.sciclone.wm.edu
+                - gu13.sciclone.wm.edu
+                - gu14.sciclone.wm.edu
+                - gu15.sciclone.wm.edu
+                - gu16.sciclone.wm.edu
+                - gu17.sciclone.wm.edu
+                # - gu18.sciclone.wm.edu
+                - gu19.sciclone.wm.edu
+                - ts4.sciclone.wm.edu
+      containers:
+      - name: cluster-grid
+        image: ghcr.io/stmorse/dtm:latest
+        resources:
+          requests:
+            memory: '50Gi'
+            # nvidia.com/gpu: '1'
+            cpu: '12'
+          limits:
+            memory: '50Gi'
+            # nvidia.com/gpu: '1'
+            cpu: '12'
+        # mount the script from the ConfigMap
+        volumeMounts:
+        - name: script
+          mountPath: /mnt/script
+        - name: home
+          mountPath: /sciclone/home/stmorse
+        - name: data
+          mountPath: /sciclone/data10/twford/reddit/reddit
+        - name: results
+          mountPath: /sciclone/proj-ds/geograd/stmorse
+        env:
+        - name: JOB_IDX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        command: ["/bin/bash", "/mnt/script/run.sh"]
+      volumes:
+      - name: script
+        configMap:
+          name: clusterk-sweep
+      - name: home
+        nfs:
+          server: 128.239.56.166
+          path: /sciclone/home/stmorse
+      - name: data
+        nfs:
+          server: 128.239.56.30
+          path: /sciclone/data10/twford/reddit/reddit
+      - name: results
+        nfs:
+          server: 192.168.59.144  # IB
+          # server: 128.239.59.144
+          path: /sciclone/proj-ds/geograd/stmorse
+      imagePullSecrets:
+      - name: ghcr-secret
+      

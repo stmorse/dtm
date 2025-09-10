@@ -1,45 +1,45 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: clusterk7014
+  name: clusterp
 spec:
   securityContext:
     runAsUser: 270999
     runAsGroup: 1132
   restartPolicy: Never
-  nodeSelector:
-   kubernetes.io/hostname: grace.sciclone.wm.edu
-  # affinity:
-  #   nodeAffinity:
-  #     requiredDuringSchedulingIgnoredDuringExecution:
-  #       nodeSelectorTerms:
-  #       - matchExpressions:
-  #         - key: kubernetes.io/hostname
-  #           operator: In
-  #           values:
-  #           - gu07.sciclone.wm.edu
-  #           - gu08.sciclone.wm.edu
-  #           - gu09.sciclone.wm.edu
-  #           - gu10.sciclone.wm.edu
-  #           - gu11.sciclone.wm.edu
-  #           - gu12.sciclone.wm.edu
-  #           - gu13.sciclone.wm.edu
-  #           - gu14.sciclone.wm.edu
-  #           - gu15.sciclone.wm.edu
-  #           - gu16.sciclone.wm.edu
-  #           - gu17.sciclone.wm.edu
-  #           # - gu18.sciclone.wm.edu
-  #           - gu19.sciclone.wm.edu
+  # nodeSelector:
+  #  kubernetes.io/hostname: grace.sciclone.wm.edu
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - gu07.sciclone.wm.edu
+            - gu08.sciclone.wm.edu
+            - gu09.sciclone.wm.edu
+            - gu10.sciclone.wm.edu
+            - gu11.sciclone.wm.edu
+            - gu12.sciclone.wm.edu
+            - gu13.sciclone.wm.edu
+            - gu14.sciclone.wm.edu
+            - gu15.sciclone.wm.edu
+            - gu16.sciclone.wm.edu
+            - gu17.sciclone.wm.edu
+            # - gu18.sciclone.wm.edu
+            - gu19.sciclone.wm.edu
   containers:
-    - name: clusterk7014-pod
+    - name: clusterp-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '300Gi'
+          memory: '50Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
         limits:
-          memory: '300Gi'
+          memory: '50Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
       command: ['/bin/bash']
@@ -48,15 +48,24 @@ spec:
         - |
           echo "Running container..."
           cd /sciclone/home/stmorse/projects/dtm/src
-          python3 -u 2c_cluster.py \
-            --subpath km/km70 \
-            --start-year 2014 \
-            --end-year 2014 \
-            --start-month 1 \
-            --end-month 12 \
-            --n-clusters 70 \
+          # python3 -u 2c_cluster.py \
+          #   --subpath km/km70 \
+          #   --start-year 2014 \
+          #   --end-year 2014 \
+          #   --start-month 1 \
+          #   --end-month 12 \
+          #   --n-clusters 70 \
+          #   --model mbkm \
+          #   > ../logs/cluster_k70_2014.log 2>&1
+          python3 -u 5a_dist_singlemonth.py \
+            --sub_path km/kmp \
+            --year 2017 \
+            --month 3 \
+            --n_clusters 50 \
+            --n_resamples 20 \
+            --align_dim 50 \
             --model mbkm \
-            > ../logs/cluster_k70_2014.log 2>&1
+            > ../logs/clusterp_2017_3.log 2>&1
           # sleep infinity
       volumeMounts:
         - name: home
@@ -76,6 +85,6 @@ spec:
         path: /sciclone/data10/twford/reddit/reddit
     - name: results
       nfs:
-        # server: 192.168.59.144  # IB
-        server: 128.239.59.144
+        server: 192.168.59.144  # IB
+        # server: 128.239.59.144
         path: /sciclone/proj-ds/geograd/stmorse

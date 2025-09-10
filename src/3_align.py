@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--end_year', type=int, required=True)
     parser.add_argument('--start_month', type=int, default=1, required=False)
     parser.add_argument('--end_month', type=int, default=12, required=False)
+    parser.add_argument('--n_clusters', type=int, default=50)
     parser.add_argument('--align_dim', type=int, default=10, required=False)
     parser.add_argument('--align_method', type=str, default="HDBSCAN", required=False)
     args = parser.parse_args()
@@ -38,9 +39,9 @@ def main():
     # align is only new path
     os.makedirs(os.path.join(subpath, 'align'), exist_ok=True)
 
-    setattr(args, "model_path", os.path.join(args.sub_path, 'models'))
-    setattr(args, "align_path", os.path.join(args.sub_path, 'align'))
-    setattr(args, "tfidf_path", os.path.join(args.sub_path, 'tfidf'))
+    setattr(args, "model_path", os.path.join(subpath, 'models'))
+    setattr(args, "align_path", os.path.join(subpath, 'align'))
+    setattr(args, "tfidf_path", os.path.join(subpath, 'tfidf'))
 
     align_clusters(args)
 
@@ -52,7 +53,7 @@ def align_clusters(args):
     yrmo = [(yr, mo) for yr in years for mo in months]
 
     # TODO: doesn't need to be the same every month, hardcoded
-    Ck = 50  
+    Ck = args.n_clusters  
 
     print(f'CPU count                 : {os.cpu_count()}')
     print(f'Aligning range            : {years}, {months}')

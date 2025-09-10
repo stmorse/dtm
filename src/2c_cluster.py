@@ -22,6 +22,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--special', type=str, default="")
     parser.add_argument('--start-year', type=int, required=True)
     parser.add_argument('--end-year', type=int, required=True)
     parser.add_argument('--start-month', type=int, required=True)
@@ -29,18 +30,23 @@ def main():
     parser.add_argument('--n-clusters', type=int, required=True)
     parser.add_argument('--model', type=str, default="mbkm")
     parser.add_argument('--chunk_size', type=int, default=1_000_000)
+    parser.add_argument('--tfidf', type=int, default=1)
     parser.add_argument('--top-k', type=int, default=100)
     parser.add_argument('--top-m', type=int, default=20)
     parser.add_argument('--max-df', type=float, default=0.3)
     args = parser.parse_args()
 
     # NOTES:
+    # special gets appended to subpath
     # chunk_size only used for NPZ arrays
+    # tfidf turns on computing tfidf
     # top_k   num sentences closest to centroid to use
     # top_m   num keywords to store
     # max_df  max doc freq threshold for tfidf to include term
     
     subpath = os.path.join(g['save_path'], args.subpath)
+    if len(args.special) > 0:
+        subpath = os.path.join(subpath, args.special)
     
     # ensure directories exist
     for subdir in ['labels', 'models', 'tfidf']:
@@ -290,65 +296,66 @@ def cluster(args):
         # TFIDF
         # ---
 
-        _log(f'Extracting text representations ... ')
+        if args.tfidf == 1:
+            _log(f'Extracting text representations ... ')
 
-        _log(f'> Building sample corpus')
-        corpus = [[] for _ in range(args.n_clusters)]
-        idx_to_cluster = {ix: c for c in closest_indices_per_cluster \
-                          for ix in closest_indices_per_cluster[c]}
-        # path to compressed file
-        file_path = None
-        for ext in ['.bz2', '.xz', '.zst']:
-            potential_path = os.path.join(args.data_path, f'RC_{year}-{month}{ext}')
-            if os.path.exists(potential_path):
-                file_path = potential_path
-                break
-        if file_path is None:
-            raise FileNotFoundError(f"No {year}-{month} with (.bz2, .xz, .zst)")
-        
-        for c, sentence in read_sentences(file_path, idx_to_cluster):
-            corpus[c].append(sentence)
+            _log(f'> Building sample corpus')
+            corpus = [[] for _ in range(args.n_clusters)]
+            idx_to_cluster = {ix: c for c in closest_indices_per_cluster \
+                            for ix in closest_indices_per_cluster[c]}
+            # path to compressed file
+            file_path = None
+            for ext in ['.bz2', '.xz', '.zst']:
+                potential_path = os.path.join(args.data_path, f'RC_{year}-{month}{ext}')
+                if os.path.exists(potential_path):
+                    file_path = potential_path
+                    break
+            if file_path is None:
+                raise FileNotFoundError(f"No {year}-{month} with (.bz2, .xz, .zst)")
+            
+            for c, sentence in read_sentences(file_path, idx_to_cluster):
+                corpus[c].append(sentence)
 
-        # collapse into a format for tf-idf vectorizor
-        for i in range(len(corpus)):
-            corpus[i] = ' --- '.join(corpus[i])
+            # collapse into a format for tf-idf vectorizor
+            for i in range(len(corpus)):
+                corpus[i] = ' --- '.join(corpus[i])
 
-        _log(f'> Computing tf-idf')
-        vectorizer = TfidfVectorizer(
-            input='content',
-            max_df=args.max_df,
-            # max_features=100,
-            use_idf=True,
-            smooth_idf=True
-        )
+            _log(f'> Computing tf-idf')
+            vectorizer = TfidfVectorizer(
+                input='content',
+                max_df=args.max_df,
+                # max_features=100,
+                use_idf=True,
+                smooth_idf=True
+            )
 
-        X = vectorizer.fit_transform(corpus)
+            X = vectorizer.fit_transform(corpus)
 
-        _log(f'> Extracting top {args.top_m} keywords')
-        keywords = []
-        for i in range(args.n_clusters):
-            max_idx = np.argsort(X[i,:].toarray().flatten())[::-1][:args.top_m]
-            keyword = vectorizer.get_feature_names_out()[max_idx]
-            keywords.append(keyword)
+            _log(f'> Extracting top {args.top_m} keywords')
+            keywords = []
+            for i in range(args.n_clusters):
+                max_idx = np.argsort(X[i,:].toarray().flatten())[::-1][:args.top_m]
+                keyword = vectorizer.get_feature_names_out()[max_idx]
+                keywords.append(keyword)
 
-        tfidf_path = os.path.join(args.tfidf_path, f'tfidf_{year}-{month}.pkl')
-        _log(f'> Saving output ({tfidf_path})')
-        output = {
-            'year': year,
-            'month': month,
-            'full': {
-                'scores': X,
-                'feature_names': vectorizer.get_feature_names_out()
-            },
-            'tfidf': {
-                i: {
-                    'sample_indices': closest_indices_per_cluster[i],
-                    'keywords': keywords[i],
-                } for i in range(args.n_clusters)
+            tfidf_path = os.path.join(args.tfidf_path, f'tfidf_{year}-{month}.pkl')
+            _log(f'> Saving output ({tfidf_path})')
+            output = {
+                'year': year,
+                'month': month,
+                'full': {
+                    'scores': X,
+                    'feature_names': vectorizer.get_feature_names_out()
+                },
+                'tfidf': {
+                    i: {
+                        'sample_indices': closest_indices_per_cluster[i],
+                        'keywords': keywords[i],
+                    } for i in range(args.n_clusters)
+                }
             }
-        }
-        with open(tfidf_path, 'wb') as f:
-            pickle.dump(output, f)
+            with open(tfidf_path, 'wb') as f:
+                pickle.dump(output, f)
 
         # ---
         # SCORE

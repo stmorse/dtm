@@ -35,11 +35,11 @@ spec:
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '100Gi'
+          memory: '50Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
         limits:
-          memory: '100Gi'
+          memory: '50Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
       command: ['/bin/bash']
@@ -51,9 +51,9 @@ spec:
           python3 -u 2c_wcss.py \
             --subpath km/km30 \
             --start-year 2017 \
-            --end-year 2021 \
-            --start-month 1 \
-            --end-month 12 \
+            --end-year 2017 \
+            --start-month 3 \
+            --end-month 3 \
             > ../logs/wcss_2017_2021_k30.log 2>&1
           # sleep infinity
       volumeMounts:

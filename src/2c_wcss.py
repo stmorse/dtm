@@ -15,6 +15,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--subpath', type=str, required=True)
+    parser.add_argument('--special', type=str, default="")
     parser.add_argument('--start-year', type=int, required=True)
     parser.add_argument('--end-year', type=int, required=True)
     parser.add_argument('--start-month', type=int, required=True)
@@ -22,6 +23,8 @@ def main():
     args = parser.parse_args()
     
     subpath = os.path.join(g['save_path'], args.subpath)
+    if len(args.special) > 0:
+        subpath = os.path.join(subpath, args.special)
     
     # augment args with paths
     setattr(args, "embed_path", g["embed_path"])

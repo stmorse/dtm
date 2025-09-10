@@ -19,7 +19,7 @@ import time
 import joblib
 import numpy as np
 import umap
-from sklearn.cluster import MiniBatchKMeans, KMeans, HDBSCAN
+from sklearn.cluster import MiniBatchKMeans, KMeans, HDBSCAN, kmeans_plusplus
 import dask.array as da
 
 KMEANS_SEED = 313
@@ -64,7 +64,6 @@ def main():
 def cluster(args):
     t0 = time.time()
     year, month = args.year, f'{args.month:02}'
-    n_clusters = args.n_clusters
     model_path = args.model_path
 
     # ----
@@ -84,20 +83,13 @@ def cluster(args):
         K = ddata.shape[0]
         print(f'Total {K} embeddings in {len(ddata.chunks[0])} chunks')
 
-        cc = None
+        C0 = None
         for p in range(args.n_resamples):
             print(f'\nFitting sample {p} ... ({time.time()-t0:.2f})')
             
             # --- FIT ---
 
             if args.model == "mbkm":
-                # reinitialize a model
-                model = MiniBatchKMeans(
-                    n_clusters=args.n_clusters,
-                    init="k-means++" if cc is None else cc,
-                    random_state=KMEANS_SEED
-                )
-
                 i = 0
                 for chunk in ddata.to_delayed().ravel():
                     arr = chunk.compute()
@@ -109,17 +101,35 @@ def cluster(args):
                     if p > 0:
                         idx = np.random.permutation(L)
 
+                    # manually compute initial cluster centroids first pass
+                    # if p == 0 and i == 0:
+                    if i == 0:
+                        centers_init, _ = kmeans_plusplus(
+                            arr[idx,:], 
+                            n_clusters=args.n_clusters,
+                            random_state=KMEANS_SEED
+                        )
+
+                        C0 = centers_init.copy()
+
+                    # initialize model
+                    if i == 0:
+                        model = MiniBatchKMeans(
+                            n_clusters=args.n_clusters,
+                            init=C0,
+                            random_state=KMEANS_SEED
+                        )
+
+                    
+
                     model.partial_fit(arr[idx,:])
                     i += 1
 
             elif args.model == "km":
-                model = KMeans(
-                    n_clusters=args.n_clusters, 
-                    init="k-means++" if cc is None else cc,
-                    random_state=KMEANS_SEED,
-                    algorithm="lloyd"
-                )
 
+                # TODO: haven't updated to be the same as MBKM
+
+                # Consolidate all embeddings, we're doing this in one batch
                 embeddings = []
                 i = 0
                 for chunk in ddata.to_delayed().ravel():
@@ -131,17 +141,34 @@ def cluster(args):
                     idx = np.arange(L)
                     if p > 0:
                         idx = np.random.permutation(L)
+
+                    # manually compute initial cluster centroids first pass
+                    if p == 0 and i == 0:
+                        centers_init, _ = kmeans_plusplus(
+                            arr, 
+                            n_clusters=args.n_clusters,
+                            random_state=KMEANS_SEED
+                        )
+                        C0 = centers_init.copy()
+                    
                     embeddings.append(arr[idx,:])
                     i += 1
+
                 embeddings = np.vstack(embeddings)
 
                 print(f"> Clustering (KM) ... ({time.time()-t0:.2f})")
+                model = KMeans(
+                    n_clusters=args.n_clusters, 
+                    init=C0,
+                    random_state=KMEANS_SEED,
+                    algorithm="lloyd"
+                )
                 model.fit(embeddings)
+
             else:
                 raise ValueError(f"Model not recognized ({args.model}).")
 
             # save just centroids
-            cc = model.cluster_centers_.copy()
             cc_name = f'model_cc_{year}-{month}_{p}.npz'
             with open(os.path.join(model_path, cc_name), 'wb') as f:
                 np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
