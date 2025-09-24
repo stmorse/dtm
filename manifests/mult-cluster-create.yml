@@ -13,7 +13,9 @@ data:
 
     # parameter grid
     # A=(30 35 40 45 50 55 60 65 70 75 80 85 90 95 100)
-    A=(5 10 15 20 25 105 110 115 120 125 130 135 140 145 150)
+    # A=(5 10 15 20 25 105 110 115 120 125 130 135 140 145 150)
+    # A=(1 155 160 165 170 175 180 185 190 195 200 205 210 215 220)
+    A=(10 20)
 
     # map index to combo  
     A_IDX=$(( IDX % ${#A[@]} ))
@@ -31,9 +33,50 @@ data:
       --tfidf        0
     )
 
+    ARGS2=(
+      --subpath      "km/kmm"
+      --special      $a_val
+      --start-year   2017
+      --end-year     2017
+      --start-month  3
+      --end-month    3
+    )
+
+    ARGS3=(
+      --subpath     "km/kmp2/cpb_$a_val"
+      --year        2015
+      --month       3
+      --n_clusters  50
+      --n_resamples 20
+      --align_dim   50
+      --use_zarr    1
+      --model       "mbkm"
+      --n_chunks_per_batch $a_val
+    )
+
+    ARGS4=(
+      --sub_path    "km/kmp2/cpb_$a_val"
+      --year        2015
+      --month       3
+      --n_permutations  1000
+      --n_periods   20
+    )
+
+    ARGS5=(
+      --subpath     "km/kmp2/cpb_$a_val"
+      --start-year  2015
+      --end-year    2015
+      --start-month 3
+      --end-month   3
+    )
+
     echo "> running combo #$IDX -> ${ARGS[*]}"
     cd /sciclone/home/stmorse/projects/dtm/src
-    exec python -u 2c_cluster.py "${ARGS[@]}" > "../logs/ck_$a_val.log" 2>&1
+    # python -u 2c_cluster.py "${ARGS[@]}" > "../logs/ck_$a_val.log" 2>&1
+    # python -u 2c_wcss.py "${ARGS2[@]}" > "../logs/ck_wcss_$a_val.log" 2>&1
+    python -u 5a_dist_singlemonth.py "${ARGS3[@]}" > "../logs/perm_20153_$a_val.log" 2>&1
+    python -u 7_rw.py "${ARGS4[@]}" > "../logs/rw_20153_$a_val.log" 2>&1
+    python -u 2c_wcss.py "${ARGS5[@]}" > "../logs/wcss_20153_$a_val.log" 2>&1
 ---
 # ---- job ----
 apiVersion: batch/v1
@@ -43,50 +86,52 @@ metadata:
   namespace: fais-1
 spec:
   # ttlSecondsAfterFinished: 300   # job (and pods) deleted 5 min after finish
-  completions: 15        # total combos
+  completions: 3        # total combos
   parallelism: 3         # num to run at once
   completionMode: Indexed
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       securityContext:
         runAsUser: 270999 
         runAsGroup: 50038
         fsGroup: 1134
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - gu07.sciclone.wm.edu
-                - gu08.sciclone.wm.edu
-                - gu09.sciclone.wm.edu
-                - gu10.sciclone.wm.edu
-                - gu11.sciclone.wm.edu
-                - gu12.sciclone.wm.edu
-                - gu13.sciclone.wm.edu
-                - gu14.sciclone.wm.edu
-                - gu15.sciclone.wm.edu
-                - gu16.sciclone.wm.edu
-                - gu17.sciclone.wm.edu
-                # - gu18.sciclone.wm.edu
-                - gu19.sciclone.wm.edu
-                - ts4.sciclone.wm.edu
+      nodeSelector:
+        kubernetes.io/hostname: grace.sciclone.wm.edu
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: kubernetes.io/hostname
+      #           operator: In
+      #           values:
+      #           - gu07.sciclone.wm.edu
+      #           - gu08.sciclone.wm.edu
+      #           - gu09.sciclone.wm.edu
+      #           - gu10.sciclone.wm.edu
+      #           - gu11.sciclone.wm.edu
+      #           - gu12.sciclone.wm.edu
+      #           - gu13.sciclone.wm.edu
+      #           - gu14.sciclone.wm.edu
+      #           - gu15.sciclone.wm.edu
+      #           - gu16.sciclone.wm.edu
+      #           - gu17.sciclone.wm.edu
+      #           - gu18.sciclone.wm.edu
+      #           - gu19.sciclone.wm.edu
+      #           - ts4.sciclone.wm.edu
       containers:
       - name: cluster-grid
         image: ghcr.io/stmorse/dtm:latest
         resources:
           requests:
-            memory: '50Gi'
+            memory: '200Gi'
             # nvidia.com/gpu: '1'
-            cpu: '12'
+            cpu: '8'
           limits:
-            memory: '50Gi'
+            memory: '200Gi'
             # nvidia.com/gpu: '1'
-            cpu: '12'
+            cpu: '8'
         # mount the script from the ConfigMap
         volumeMounts:
         - name: script
@@ -117,8 +162,8 @@ spec:
           path: /sciclone/data10/twford/reddit/reddit
       - name: results
         nfs:
-          server: 192.168.59.144  # IB
-          # server: 128.239.59.144
+          # server: 192.168.59.144  # IB
+          server: 128.239.59.144
           path: /sciclone/proj-ds/geograd/stmorse
       imagePullSecrets:
       - name: ghcr-secret

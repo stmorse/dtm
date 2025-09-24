@@ -17,6 +17,7 @@ spec:
           - key: kubernetes.io/hostname
             operator: In
             values:
+            - ts4.sciclone.wm.edu
             - gu07.sciclone.wm.edu
             - gu08.sciclone.wm.edu
             - gu09.sciclone.wm.edu
@@ -28,18 +29,18 @@ spec:
             - gu15.sciclone.wm.edu
             - gu16.sciclone.wm.edu
             - gu17.sciclone.wm.edu
-            # - gu18.sciclone.wm.edu
+            - gu18.sciclone.wm.edu
             - gu19.sciclone.wm.edu
   containers:
     - name: clusterp-pod
       image: ghcr.io/stmorse/dtm:latest
       resources:
         requests:
-          memory: '50Gi'
+          memory: '80Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
         limits:
-          memory: '50Gi'
+          memory: '80Gi'
           # nvidia.com/gpu: '1'
           cpu: '12'
       command: ['/bin/bash']
@@ -58,14 +59,15 @@ spec:
           #   --model mbkm \
           #   > ../logs/cluster_k70_2014.log 2>&1
           python3 -u 5a_dist_singlemonth.py \
-            --sub_path km/kmp \
+            --subpath km/kmp \
             --year 2017 \
-            --month 3 \
+            --month 4 \
             --n_clusters 50 \
             --n_resamples 20 \
             --align_dim 50 \
             --model mbkm \
-            > ../logs/clusterp_2017_3.log 2>&1
+            --n_chunks_per_batch 10 \
+            > ../logs/clusterp_2017_4.log 2>&1
           # sleep infinity
       volumeMounts:
         - name: home

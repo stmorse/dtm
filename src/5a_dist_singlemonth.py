@@ -30,7 +30,7 @@ def main():
     g = config['general']
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sub_path', type=str, required=True)
+    parser.add_argument('--subpath', type=str, required=True)
     parser.add_argument('--year', type=int, required=True)
     parser.add_argument('--month', type=int, required=True)
     parser.add_argument('--n_clusters', type=int, default=50)
@@ -39,144 +39,180 @@ def main():
     parser.add_argument('--use_zarr', type=int, default=1)
     parser.add_argument('--model', type=str, default="mbkm")
     parser.add_argument('--make_clusters', type=int, default=1)
+    parser.add_argument('--n_chunks_per_batch', type=int, default=1)
+
     args = parser.parse_args()
 
-    args.sub_path = os.path.join(g['save_path'], args.sub_path)
+    # n_chunks_per_batch  - currently only for zarr + mbkm
+
+    subpath = os.path.join(g['save_path'], args.subpath)
 
     # ensure directories exist
     for subdir in ['models', 'align']:
-        if not os.path.exists(os.path.join(args.sub_path, subdir)):
-            os.makedirs(os.path.join(args.sub_path, subdir), exist_ok=True)
+        if not os.path.exists(os.path.join(subpath, subdir)):
+            os.makedirs(os.path.join(subpath, subdir), exist_ok=True)
 
     # augment args with paths
     setattr(args, "embed_path", g["embed_path"])
-    setattr(args, "model_path", os.path.join(args.sub_path, 'models'))
-    setattr(args, "align_path", os.path.join(args.sub_path, 'align'))
+    setattr(args, "model_path", os.path.join(subpath, 'models'))
+    setattr(args, "align_path", os.path.join(subpath, 'align'))
 
     print(f'CPU count              : {os.cpu_count()}')
     print(f'Time period            : {args.year}, {args.month}')
-    print(f'Saving results to path : {args.sub_path}\n')
+    print(f'Saving results to path : {args.subpath}\n')
+
+    # start time (used in _log)
+    global t0
+    t0 = time.time()
 
     if args.make_clusters==1:
         cluster(args)
     align(args)
+
+def _log(msg):
+    t = time.time() - t0
+    print(f"{msg} ... ({t:.2f})")
 
 def cluster(args):
     t0 = time.time()
     year, month = args.year, f'{args.month:02}'
     model_path = args.model_path
 
-    # ----
-    # FIT / LABEL
-    # ----
-
-    print(
-        f'Loading embeddings {year}-{month} (Using zarr: {args.use_zarr}) '
-        f'... ({time.time()-t0:.2f})'
-    )
+    # will hold all kmeans models (one for each permutation)
+    models = []
     
     # --- USING ZARR ---
 
     if args.use_zarr == 1:
+        
         # load data
+        _log(f'Loading embeddings {year}-{month} (Using zarr)')
         ddata = da.from_zarr(os.path.join(args.embed_path, f'embeddings_{year}-{month}.zarr'))
         K = ddata.shape[0]
-        print(f'Total {K} embeddings in {len(ddata.chunks[0])} chunks')
-
-        C0 = None
-        for p in range(args.n_resamples):
-            print(f'\nFitting sample {p} ... ({time.time()-t0:.2f})')
+        M = len(ddata.chunks[0])
+        _log(f'Total {K} embeddings in {M} chunks')
+        
+        if args.model == "mbkm":
             
-            # --- FIT ---
+            i = 0  # tracks total chunks
+            j = 0  # tracks num chunks in this batch
+            batch = []
+            for chunk in ddata.to_delayed().ravel():
+                
+                arr = chunk.compute()
+                _log(f'> Consolidating chunk {i+1}/{M} ({arr.shape[0]})')
+                batch.append(arr)
+                j += 1
 
-            if args.model == "mbkm":
-                i = 0
-                for chunk in ddata.to_delayed().ravel():
-                    arr = chunk.compute()
-                    L = arr.shape[0]
-                    print(f'> Fitting chunk {i} ({L}) ... ({time.time()-t0:.2f})')
+                # permute and fit, if this is our final chunk for batch
+                # note we already incremented j so we're checking ==
+                if j == args.n_chunks_per_batch:
+                    batch = np.vstack(batch)
+                    _log(f'>> Fitting batch ({batch.shape[0]})')
 
-                    # first time, all data, other times, sampled with replacement
-                    idx = np.arange(L)
-                    if p > 0:
-                        idx = np.random.permutation(L)
+                    # we have a batch ready, iterate over every perm
+                    # and fit the corresponding model
+                    for p in range(args.n_resamples):
+                        _log(f'>>> Permutation {p+1}/{args.n_resamples}')
 
-                    # manually compute initial cluster centroids first pass
-                    # if p == 0 and i == 0:
-                    if i == 0:
-                        centers_init, _ = kmeans_plusplus(
-                            arr[idx,:], 
-                            n_clusters=args.n_clusters,
-                            random_state=KMEANS_SEED
-                        )
+                        # first time, all data, other times, sampled with replacement
+                        idx = np.arange(batch.shape[0])
+                        if p > 0:
+                            idx = np.random.permutation(batch.shape[0])
 
-                        C0 = centers_init.copy()
+                        # compute initial cluster centroids first pass
+                        # and initialize model
+                        # NOTE: this does different init for every perm
+                        if j - 1 == i:
+                            # we are doing kmeans++ separately so that
+                            # it's easy to change code to doing this once for 
+                            # all perms for testing
+                            C0, _ = kmeans_plusplus(
+                                batch[idx,:], 
+                                n_clusters=args.n_clusters,
+                                random_state=KMEANS_SEED
+                            )
 
-                    # initialize model
-                    if i == 0:
-                        model = MiniBatchKMeans(
-                            n_clusters=args.n_clusters,
-                            init=C0,
-                            random_state=KMEANS_SEED
-                        )
+                            # initialize model
+                            model = MiniBatchKMeans(
+                                n_clusters=args.n_clusters,
+                                init=C0,
+                                compute_labels=False,  # don't save labels
+                                random_state=KMEANS_SEED
+                            )
 
-                    
+                            models.append(model)
 
-                    model.partial_fit(arr[idx,:])
-                    i += 1
+                        # fit this permutation's model to its version of the batch
+                        models[p].partial_fit(batch[idx,:])
 
-            elif args.model == "km":
+                    # reset batch
+                    j = 0
+                    batch = []
+                
+                i += 1
 
-                # TODO: haven't updated to be the same as MBKM
+        elif args.model == "km":
 
-                # Consolidate all embeddings, we're doing this in one batch
-                embeddings = []
-                i = 0
-                for chunk in ddata.to_delayed().ravel():
-                    arr = chunk.compute()
-                    L = arr.shape[0]
-                    
-                    print(f'> Consolidating chunk {i} ({L}) ... ({time.time()-t0:.2f})')
-                    
-                    idx = np.arange(L)
-                    if p > 0:
-                        idx = np.random.permutation(L)
+            pass
 
-                    # manually compute initial cluster centroids first pass
-                    if p == 0 and i == 0:
-                        centers_init, _ = kmeans_plusplus(
-                            arr, 
-                            n_clusters=args.n_clusters,
-                            random_state=KMEANS_SEED
-                        )
-                        C0 = centers_init.copy()
-                    
-                    embeddings.append(arr[idx,:])
-                    i += 1
+            # TODO: haven't updated to be the same as MBKM
 
-                embeddings = np.vstack(embeddings)
+            # Consolidate all embeddings, we're doing this in one batch
+            # embeddings = []
+            # i = 0
+            # for chunk in ddata.to_delayed().ravel():
+            #     arr = chunk.compute()
+            #     L = arr.shape[0]
+                
+            #     print(f'> Consolidating chunk {i} ({L}) ... ({time.time()-t0:.2f})')
+                
+            #     idx = np.arange(L)
+            #     if p > 0:
+            #         idx = np.random.permutation(L)
 
-                print(f"> Clustering (KM) ... ({time.time()-t0:.2f})")
-                model = KMeans(
-                    n_clusters=args.n_clusters, 
-                    init=C0,
-                    random_state=KMEANS_SEED,
-                    algorithm="lloyd"
-                )
-                model.fit(embeddings)
+            #     # manually compute initial cluster centroids first pass
+            #     if p == 0 and i == 0:
+            #         centers_init, _ = kmeans_plusplus(
+            #             arr, 
+            #             n_clusters=args.n_clusters,
+            #             random_state=KMEANS_SEED
+            #         )
+            #         C0 = centers_init.copy()
+                
+            #     embeddings.append(arr[idx,:])
+            #     i += 1
 
-            else:
-                raise ValueError(f"Model not recognized ({args.model}).")
+            # embeddings = np.vstack(embeddings)
 
+            # print(f"> Clustering (KM) ... ({time.time()-t0:.2f})")
+            # model = KMeans(
+            #     n_clusters=args.n_clusters, 
+            #     init=C0,
+            #     random_state=KMEANS_SEED,
+            #     algorithm="lloyd"
+            # )
+            # model.fit(embeddings)
+
+        else:
+            raise ValueError(f"Model not recognized ({args.model}).")
+
+        # iterate through all models and save centroids
+        _log("\nSaving centroids")
+        for p in range(args.n_resamples):
             # save just centroids
             cc_name = f'model_cc_{year}-{month}_{p}.npz'
             with open(os.path.join(model_path, cc_name), 'wb') as f:
-                np.savez_compressed(f, cc=model.cluster_centers_.copy(), allow_pickle=False)
+                np.savez_compressed(
+                    f, 
+                    cc=models[p].cluster_centers_.copy(), 
+                    allow_pickle=False
+                )
 
-            print(f'> Centroids saved to {cc_name} ({time.time()-t0:.2f})')
+            _log(f'> Centroids saved for perm {p}')
 
     # --- USING NPZ ---
-
+    # TODO: not implemented
     else:
         pass
 

@@ -15,13 +15,38 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 
+def main():
+    config = configparser.ConfigParser()
+    config.read('../config.ini')
+    g = config['general']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sub_path', type=str, required=True)
+    parser.add_argument('--year', type=int, required=True)
+    parser.add_argument('--month', type=int, required=True)
+    parser.add_argument('--n_components', type=int, default=45)
+    parser.add_argument('--n_permutations', type=int, default=1000)
+    parser.add_argument('--n_periods', type=int, default=10)
+    args = parser.parse_args()
+
+    args.sub_path = os.path.join(g['save_path'], args.sub_path)
+
+    print(f'CPU count              : {os.cpu_count()}')
+    print(f'Time period            : {args.year}, {args.month}')
+    print(f'Saving results to path : {args.sub_path}\n')
+
+    rw(args)
+
+
 def rw(args):
     year, month = args.year, f'{args.month:02}'
 
     # load the full C matrix and labels
     label_path = os.path.join(args.sub_path, f'align/align_model_{year}-{month}_labels.npz')
     model_path = os.path.join(args.sub_path, f'models')
-    save_path = os.path.join(args.sub_path, f'tab/table_{year}-{month}.csv')
+    save_path = os.path.join(args.sub_path, f'tab')
+
+    os.makedirs(save_path, exist_ok=True)
 
     # load topic group labels
     with open(label_path, 'rb') as f:
@@ -98,27 +123,8 @@ def rw(args):
 
     # convert to pandas and save
     res = pd.DataFrame(res, columns=['coi', 'size', 'diam', 'disp', 'lam', 'pve'])
-    res.to_csv(save_path, index=False)
+    res.to_csv(os.path.join(save_path, f'table_{year}-{month}.csv'), index=False)
 
 
 if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config.read('../config.ini')
-    g = config['general']
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--sub_path', type=str, required=True)
-    parser.add_argument('--year', type=int, required=True)
-    parser.add_argument('--month', type=int, required=True)
-    parser.add_argument('--n_components', type=int, default=45)
-    parser.add_argument('--n_permutations', type=int, default=1000)
-    parser.add_argument('--n_periods', type=int, default=10)
-    args = parser.parse_args()
-
-    args.sub_path = os.path.join(g['save_path'], args.sub_path)
-
-    print(f'CPU count              : {os.cpu_count()}')
-    print(f'Time period            : {args.year}, {args.month}')
-    print(f'Saving results to path : {args.sub_path}\n')
-
-    rw(args)
+    main()

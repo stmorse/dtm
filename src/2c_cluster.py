@@ -29,16 +29,19 @@ def main():
     parser.add_argument('--end-month', type=int, required=True)
     parser.add_argument('--n-clusters', type=int, required=True)
     parser.add_argument('--model', type=str, default="mbkm")
+    parser.add_argument('--n-chunks-per-batch', type=int, default=1)
     parser.add_argument('--chunk_size', type=int, default=1_000_000)
     parser.add_argument('--tfidf', type=int, default=1)
     parser.add_argument('--top-k', type=int, default=100)
     parser.add_argument('--top-m', type=int, default=20)
     parser.add_argument('--max-df', type=float, default=0.3)
+    
     args = parser.parse_args()
 
     # NOTES:
     # special gets appended to subpath
     # chunk_size only used for NPZ arrays
+    # n-chunks-per-batch only used for zarr + mbkm
     # tfidf turns on computing tfidf
     # top_k   num sentences closest to centroid to use
     # top_m   num keywords to store
@@ -125,11 +128,26 @@ def cluster(args):
 
             # -- FIT MBKM --
             if args.model == "mbkm":
-                i = 0
+                i = 0  # tracks total chunks
+                j = 0  # tracks num chunks in this batch
+                batch = []
                 for chunk in ddata.to_delayed().ravel():
-                    arr = chunk.compute()  
-                    _log(f'> Fitting chunk {i+1}/{M} ({arr.shape[0]})')
-                    model.partial_fit(arr)
+                    arr = chunk.compute()
+                    _log(f'> Consolidating chunk {i+1}/{M} ({arr.shape[0]})')
+                    batch.append(arr)
+                    j += 1
+
+                    # fit, if this is our final chunk for the batch
+                    # note we already incremented j so we're checking ==
+                    if j == args.n_chunks_per_batch:
+                        batch = np.vstack(batch)
+                        _log(f'>> Fitting batch ({batch.shape[0]})')
+                        model.partial_fit(batch)
+                        
+                        # reset batch
+                        j = 0
+                        batch = []
+                    
                     i += 1
 
             # -- FIT KM --
