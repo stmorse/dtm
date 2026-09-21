@@ -1,0 +1,34 @@
+# Local (prospero, RTX 5090 / sm_120) environment, Python 3.12.
+# requirements.txt is pinned for the cm image (torch 2.5.1 + CUDA 12.4), which does not support Blackwell.
+# Here only torch differs; analysis libraries match the image's pins so that saved pickles
+# (HDBSCAN, MiniBatchKMeans, tfidf) load cleanly and results match cm runs.
+#
+# Install:
+#   uv pip install -r requirements-local.txt --torch-backend cu128
+
+torch
+
+# pinned to match requirements.txt / cm image
+numpy==1.26.4
+scipy==1.14.1
+pandas==2.2.3
+scikit-learn==1.7.1
+umap-learn==0.5.7
+numba==0.60.0
+llvmlite==0.43.0
+pynndescent==0.5.13
+sentence-transformers==3.3.1
+transformers==4.47.0
+tokenizers==0.21.0
+huggingface-hub==0.27.0
+zarr==3.0.0
+numcodecs==0.14.1
+dask[array]==2025.7.0
+joblib==1.4.2
+zstandard==0.23.0
+
+# local analysis / notebooks (not in the image)
+statsmodels
+matplotlib==3.10.0
+ipykernel
+networkx==3.4.2
