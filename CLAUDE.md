@@ -70,4 +70,4 @@ The revision is split into workstreams WS1–WS5, defined in `response.md`. Seve
   - `7_rw.py` / viz.ipynb shuffle centroids rather than steps (see R1.1).
   - `5a_dist` resamples vary only the init.
   - `2b_r_cluster.py`, `5a_r_singlemonth.py`, and `test-create.yml` are broken.
-- `1_embed.py` keeps `[removed]`/`[deleted]` bodies from live authors, truncates at 2000 characters, and saves no metadata. Embedding row *i* maps to text only by re-streaming the raw file with the same filter (`utils.read_sentences`).
+- `1_embed.py` keeps `[removed]`/`[deleted]` bodies from live authors, and truncates at 2000 characters. It currently saves no metadata, but earlier runs did: `save_path/metadata/` (gzipped CSV despite the name; 2006–2012) and `save_path/metadata2/` (pickled lists; 2007–2015-10) map embedding row ↔ comment ID. There is no metadata for 2015-11 onward; there, row *i* maps to text only by re-streaming the raw file with the same filter (`utils.read_sentences`). Details are in `response.md` → Verified shared facts.
