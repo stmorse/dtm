@@ -10,6 +10,8 @@ Other workstreams import from here; keep function signatures stable.
 """
 
 import os
+import pickle
+from collections import Counter
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -291,3 +293,72 @@ def perm_test_minp(Xr, rs, n_perm=10000, rng=None, max_elems=2e7):
     return float(p_final), dict(zip(rs, P[0]))
 
 
+# ---------------------------------------------------------------------------
+# multiple testing
+# ---------------------------------------------------------------------------
+
+def bh_qvalues(p):
+    """Benjamini-Hochberg q-values for a 1-d array of p-values (NaNs kept).
+
+    q_(i) = min over j >= i of m * p_(j) / j, capped at 1. Rejecting every
+    q <= alpha controls the false discovery rate at alpha under independence
+    or positive dependence.
+    """
+    p = np.asarray(p, dtype=float)
+    q = np.full_like(p, np.nan)
+    ok = ~np.isnan(p)
+    x = p[ok]
+    m = len(x)
+    if m == 0:
+        return q
+    order = np.argsort(x)
+    ranked = x[order] * m / np.arange(1, m + 1)
+    ranked = np.minimum.accumulate(ranked[::-1])[::-1]
+    out = np.empty(m)
+    out[order] = np.minimum(ranked, 1.0)
+    q[ok] = out
+    return q
+
+
+# ---------------------------------------------------------------------------
+# path shape (descriptive)
+# ---------------------------------------------------------------------------
+
+def path_length(X):
+    """Total length of the trajectory, sum_t ||x_t+1 - x_t||."""
+    return float(np.linalg.norm(np.diff(X, axis=0), axis=1).sum())
+
+
+def straightness(X):
+    """||x_last - x_first|| / path_length: 1 = straight line, 0 = returns home.
+
+    Descriptive only. A straight drift gives 1, a random walk about 1/sqrt(T-1),
+    and independent noise around a fixed location tends to 0 as T grows.
+    """
+    L = path_length(X)
+    return displacement(X) / L if L > 0 else np.nan
+
+
+def max_step(X):
+    """Largest single consecutive step, which flags one-off level shifts."""
+    return float(np.linalg.norm(np.diff(X, axis=0), axis=1).max())
+
+
+# ---------------------------------------------------------------------------
+# tf-idf labels
+# ---------------------------------------------------------------------------
+
+def load_keywords(run_path, yrmo=None):
+    """TF-IDF keyword lists, one per centroid row (same row order as C)."""
+    kw = []
+    for year, month in (yrmo or yrmo_range()):
+        with open(os.path.join(run_path, 'tfidf', f'tfidf_{year}-{month}.pkl'), 'rb') as f:
+            tf = pickle.load(f)['tfidf']
+        kw += [tf[j]['keywords'] for j in range(len(tf))]
+    return kw
+
+
+def group_label(keywords, idx, n=3, per_row=10):
+    """Most common TF-IDF keywords across the rows idx of a group."""
+    top = Counter(w for i in idx for w in keywords[i][:per_row]).most_common(n)
+    return ' '.join(w for w, _ in top)

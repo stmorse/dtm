@@ -15,6 +15,10 @@ Takes the locked drift-test results and
           Each group's rho1 is also z-scored against its own shuffle null,
           since a finite exchangeable sequence has E[rho1] < 0.
         - normality of the projected steps (Shapiro-Wilk per dimension).
+        - step size against the calendar gap it spans. A diffusing random walk
+          gives E||d||^2 proportional to the gap; independent noise around a
+          location gives a flat profile. Reported per group (Spearman) and
+          pooled over all consecutive pairs.
 
 Run from src/:
     python 8f_diagnostics.py --seed 0
@@ -47,20 +51,7 @@ def to_md(df):
     return '\n'.join(rows)
 
 
-def bh_qvalues(p):
-    """Benjamini-Hochberg q-values for a 1-d array of p-values (NaNs kept)."""
-    p = np.asarray(p, dtype=float)
-    q = np.full_like(p, np.nan)
-    ok = ~np.isnan(p)
-    x = p[ok]
-    m = len(x)
-    order = np.argsort(x)
-    ranked = x[order] * m / np.arange(1, m + 1)
-    ranked = np.minimum.accumulate(ranked[::-1])[::-1]
-    out = np.empty(m)
-    out[order] = np.minimum(ranked, 1.0)
-    q[ok] = out
-    return q
+bh_qvalues = drift.bh_qvalues          # shared implementation, see drift.py
 
 
 def rho1(steps):
@@ -68,6 +59,49 @@ def rho1(steps):
     num = float(np.sum(steps[:-1] * steps[1:]))
     den = float(np.sum(steps * steps))
     return num / den if den > 0 else np.nan
+
+
+GAP_BINS = [0, 1, 2, 3, 6, 12, 24, 10**6]
+GAP_LABELS = ['1 mo', '2', '3', '4-6', '7-12', '13-24', '>24']
+
+
+def gap_steps(periods, steps):
+    """(calendar gap in months, step length) for consecutive pairs.
+
+    Pairs inside the same month are dropped: with --within_month asis a group
+    can have several centroids in one month, and those have gap 0.
+    """
+    gap = np.diff(np.asarray(periods, dtype=float))
+    length = np.linalg.norm(steps, axis=1)
+    m = gap > 0
+    return gap[m], length[m]
+
+
+def gap_rho(gap, length, min_pairs=4):
+    """Spearman correlation of step length with the gap it spans."""
+    if len(gap) < min_pairs or len(np.unique(gap)) < 2:
+        return np.nan
+    return float(stats.spearmanr(gap, length).statistic)
+
+
+def gap_table(gap, length):
+    """Pooled median step length by gap band, with a random-walk reference.
+
+    Under a random walk E||d||^2 grows with the gap, so the median length
+    grows as sqrt(gap); the reference column anchors that curve on the
+    shortest band so the two can be read off against each other.
+    """
+    b = pd.cut(gap, GAP_BINS, labels=GAP_LABELS)
+    t = (pd.DataFrame({'gap': gap, 'step': length, 'band': b})
+         .groupby('band', observed=True)
+         .agg(n_pairs=('step', 'size'), median_gap=('gap', 'median'),
+              median_step=('step', 'median'),
+              median_step_sq=('step', lambda x: float(np.median(x ** 2))))
+         .reset_index())
+    g0, s0 = t.median_gap.iloc[0], t.median_step.iloc[0]
+    t['rw_reference'] = s0 * np.sqrt(t.median_gap / g0)
+    t['ratio_to_rw'] = t.median_step / t.rw_reference
+    return t
 
 
 def main():
@@ -118,9 +152,9 @@ def main():
     labels = drift.load_group_labels(align_path)
     rng = np.random.default_rng(args.seed)
 
-    rows, shapiro_all = [], []
+    rows, shapiro_all, gap_all, len_all = [], [], [], []
     for coi in df.index:
-        rows_k, _ = drift.group_rows(labels, coi, k=args.k)
+        rows_k, periods = drift.group_rows(labels, coi, k=args.k)
         X = drift.trajectory(C, rows_k)
         T = X.shape[0]
         r_k = max(1, min(args.r, (T - 2) // 2))
@@ -135,12 +169,21 @@ def main():
         # Shapiro-Wilk on each projected step dimension (needs >= 3 points)
         sh = [stats.shapiro(steps_r[:, j]).pvalue for j in range(r_k)] if len(steps_r) >= 3 else []
         shapiro_all.extend(sh)
+
+        gap, length = gap_steps(periods, steps_full)
+        gap_all.append(gap)
+        len_all.append(length)
+
         rows.append({'coi': coi, 'T': T, 'r': r_k,
                      'rho1': obs, 'rho1_null_mean': float(null.mean()), 'rho1_z': z,
+                     'gap_rho': gap_rho(gap, length), 'gap_n': len(gap),
                      'shapiro_min': min(sh) if sh else np.nan,
                      'shapiro_frac_lt05': float(np.mean(np.array(sh) < 0.05)) if sh else np.nan})
     diag = pd.DataFrame(rows).set_index('coi')
-    out = df.join(diag[['rho1', 'rho1_null_mean', 'rho1_z', 'shapiro_min', 'shapiro_frac_lt05']])
+    gap_pool = np.concatenate(gap_all)
+    gaps = gap_table(gap_pool, np.concatenate(len_all))
+    out = df.join(diag[['rho1', 'rho1_null_mean', 'rho1_z', 'gap_rho', 'gap_n',
+                        'shapiro_min', 'shapiro_frac_lt05']])
     out.to_csv(os.path.join(args.out_path, 'groups.csv'))
 
     summary = {
@@ -151,10 +194,27 @@ def main():
         'rho1_z_median': float(out.rho1_z.median()),
         'frac_rho1_below_-0.3': float((out.rho1 < -0.3).mean()),
         'shapiro_frac_dims_lt05': float(out.shapiro_frac_lt05.mean()),
+        'gap_pairs': int(len(gap_pool)),
+        'gap_rho_median': float(out.gap_rho.median()),
+        'gap_rho_frac_positive': float((out.gap_rho > 0).mean()),
+        'gap_rho_sign_test_p': float(stats.binomtest(int((out.gap_rho > 0).sum()),
+                                                     int(out.gap_rho.notna().sum()), 0.5).pvalue),
+        'gap_rho_median_q05': float(out.loc[out.q_lam < 0.05, 'gap_rho'].median()),
+        'gap_rho_frac_positive_q05': float((out.loc[out.q_lam < 0.05, 'gap_rho'] > 0).mean()),
+        'gap_longest_vs_shortest': float(gaps.median_step.iloc[-1] / gaps.median_step.iloc[0]),
         'fdr': counts.to_dict('records'),
     }
     with open(os.path.join(args.out_path, 'params.json'), 'w') as f:
         json.dump(vars(args) | {'summary': summary}, f, indent=2)
+
+    gaps.to_csv(os.path.join(args.tab_path, 'R2.5_gap_profile_draft.csv'), index=False)
+    with open(os.path.join(args.tab_path, 'R2.5_gap_profile_draft.md'), 'w') as f:
+        f.write('# R2.5 - step size against the calendar gap it spans\n\n'
+                'All consecutive pairs of the tested groups, pooled. `rw_reference` is the '
+                'median step a random walk would give, anchored on the shortest band '
+                '(median step grows as sqrt(gap)); `ratio_to_rw` below 1 means the steps '
+                'grow more slowly than diffusion would predict.\n\n')
+        f.write(to_md(gaps.round(4)) + '\n')
 
     counts.to_csv(os.path.join(args.tab_path, 'R2.6_fdr_counts_draft.csv'), index=False)
     with open(os.path.join(args.tab_path, 'R2.6_fdr_counts_draft.md'), 'w') as f:
@@ -162,13 +222,13 @@ def main():
         f.write(to_md(counts) + '\n')
 
     np.save(os.path.join(args.out_path, 'shapiro_all.npy'), np.array(shapiro_all))
-    plot_diagnostics(out, np.array(shapiro_all), args)
+    plot_diagnostics(out, np.array(shapiro_all), gaps, args)
     print(counts.to_string(index=False))
     print(json.dumps({k: v for k, v in summary.items() if k != 'fdr'}, indent=2))
 
 
-def plot_diagnostics(out, shapiro_all, args):
-    fig, axs = plt.subplots(1, 2, figsize=(11, 4.2), facecolor=SURFACE)
+def plot_diagnostics(out, shapiro_all, gaps, args):
+    fig, axs = plt.subplots(1, 3, figsize=(15, 4.2), facecolor=SURFACE)
     for ax in axs:
         ax.set_facecolor(SURFACE)
         for s in ax.spines.values():
@@ -195,6 +255,26 @@ def plot_diagnostics(out, shapiro_all, args):
     ax.set_ylabel('group × dimension', color=INK2)
     ax.set_title('(b) Normality of projected steps', fontsize=10, color=INK, loc='left')
     ax.legend(frameon=False, fontsize=8)
+
+    # (c) does displacement accumulate with elapsed time?
+    ax = axs[2]
+    x = np.arange(len(gaps))
+    ax.plot(x, gaps.rw_reference, color=INK2, lw=2, ls=':', marker='',
+            label='random walk (median step grows as \u221agap)')
+    ax.plot(x, gaps.median_step, color=BLUE, lw=2, marker='o', ms=5,
+            label='observed median step')
+    ax.axhline(gaps.median_step.iloc[0], color=ORANGE, lw=2, ls='--',
+               label='noise around a location (flat)')
+    for xi, (n, s_) in enumerate(zip(gaps.n_pairs, gaps.median_step)):
+        ax.annotate(f'n={n}', (xi, s_), xytext=(0, -14), textcoords='offset points',
+                    fontsize=6.5, color=INK2, ha='center')
+    ax.set_xticks(x)
+    ax.set_xticklabels(gaps.band, fontsize=8)
+    ax.set_ylim(0, max(gaps.rw_reference.max(), gaps.median_step.max()) * 1.12)
+    ax.set_xlabel('calendar gap spanned by the step (months)', color=INK2)
+    ax.set_ylabel('median step length', color=INK2)
+    ax.set_title('(c) Step size vs elapsed time', fontsize=10, color=INK, loc='left')
+    ax.legend(frameon=False, fontsize=8, loc='upper left')
 
     fig.suptitle('DRAFT: step diagnostics for the aligned topic groups (R2.5)',
                  fontsize=10, color=INK, x=0.005, ha='left')

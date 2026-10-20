@@ -17,7 +17,6 @@ import argparse
 import configparser
 import json
 import os
-import pickle
 import time
 from collections import Counter
 
@@ -74,7 +73,7 @@ def main():
     labels = drift.load_group_labels(align_path)
     with open(os.path.join(align_path, 'cu2d.npz'), 'rb') as f:
         U = np.load(f)['Cu2d']
-    keywords = load_keywords(run_path)
+    keywords = drift.load_keywords(run_path)
 
     rng = np.random.default_rng(args.seed)
     rows = []
@@ -107,16 +106,6 @@ def main():
     plot_map(U, labels, df, rs, args)
     print(f'{n_sig}/{len(df)} groups with p_minp < {args.alpha}; '
           f'figure -> {args.fig_path}.{{png,pdf}} ({time.time()-t0:.0f}s)')
-
-
-def load_keywords(run_path, yrmo=None):
-    """TF-IDF keyword lists, one per centroid row."""
-    kw = []
-    for year, month in (yrmo or drift.yrmo_range()):
-        with open(os.path.join(run_path, 'tfidf', f'tfidf_{year}-{month}.pkl'), 'rb') as f:
-            tf = pickle.load(f)['tfidf']
-        kw += [tf[k]['keywords'] for k in range(len(tf))]
-    return kw
 
 
 def plot_map(U, labels, df, rs, args):

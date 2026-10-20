@@ -1,0 +1,77 @@
+# WS3 (revision) interactive dev pod. CPU only.
+#
+#   kubectl apply -f manifests/rev-ws3-dev.yml
+#   kubectl exec -it dtm-ws3-dev -n fais-1 -- /bin/bash
+#   kubectl delete pod dtm-ws3-dev -n fais-1
+#
+# Differs from dev-cpu-create.yml in three ways, all deliberate:
+#   1. HF_HOME points at the cache that actually exists and holds MiniLM,
+#      /sciclone/proj-ds/geograd/stmorse/.cache/huggingface (inside the
+#      `results` mount). dev-cpu-create.yml's /sciclone/home/... path does not
+#      exist; the embed runs only worked because 1_embed.py overrides HF_HOME
+#      from config.ini's hf_path.
+#   2. Lands in /sciclone/home/stmorse/projects/dtm, which this pod mounts.
+#      dev-cpu-create.yml cd's into /sciclone/geograd/stmorse/dtm, which it
+#      does not mount.
+#   3. 12 CPUs, to match the retrieval Job pods so the throughput numbers from
+#      10b_model_check.py transfer.
+#
+# Needs ../config.ini in the pod checkout, with the pod paths from
+# config.example.ini (no /mnt prefix).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dtm-ws3-dev
+  namespace: fais-1
+spec:
+  securityContext:
+    runAsUser: 270999
+    runAsGroup: 1132
+  restartPolicy: Never
+  containers:
+    - name: dtm-ws3-dev-pod
+      image: ghcr.io/stmorse/dtm:latest
+      resources:
+        requests:
+          memory: '64Gi'
+          cpu: '12'
+        limits:
+          memory: '64Gi'
+          cpu: '12'
+      command: ['/bin/bash']
+      args:
+        - '-c'
+        - |
+          echo "WS3 dev pod up. Checkout: /sciclone/home/stmorse/projects/dtm"
+          cd /sciclone/home/stmorse/projects/dtm/src || echo "CHECKOUT NOT FOUND"
+          sleep infinity
+      env:
+        - name: HF_HOME
+          value: '/sciclone/proj-ds/geograd/stmorse/.cache/huggingface'
+        - name: HF_HUB_OFFLINE       # models are pre-staged; fail loudly if not
+          value: '1'
+        - name: NUMBA_CACHE_DIR      # for umap
+          value: /tmp/numba_cache
+        - name: OMP_NUM_THREADS      # keep BLAS from oversubscribing the limit
+          value: '12'
+      volumeMounts:
+        - name: home
+          mountPath: /sciclone/home/stmorse
+        - name: data
+          mountPath: /sciclone/data10/twford/reddit/reddit
+        - name: results
+          mountPath: /sciclone/proj-ds/geograd/stmorse
+  volumes:
+    - name: home
+      nfs:
+        server: 128.239.56.166
+        path: /sciclone/home/stmorse
+    - name: data
+      nfs:
+        server: 128.239.56.30
+        path: /sciclone/data10/twford/reddit/reddit
+    - name: results
+      nfs:
+        # server: 192.168.59.144  # IB
+        server: 128.239.59.144   # ethernet
+        path: /sciclone/proj-ds/geograd/stmorse
