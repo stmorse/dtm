@@ -1,0 +1,205 @@
+variant,shown_as,g_pub,n_units,label_pub,overlap,frac_to_noise,n_dest,label_var,label_new,labels_emigrant
+published_s0,random,11,11,store food beer stores restaurant,1.0,0.0,1,store food beer stores restaurant,,
+published_s0,random,34,5,de eu ser en se,0.8,0.0,2,de eu en que puede,de en que puede eu,de eu la
+published_s0,random,67,8,ball bounds field feet replay,1.0,0.125,1,ball field action 1st pass,ball action 3rd field goal,
+published_s0,named,146,6,team season player players bench,0.6,0.16666666666666666,2,team season player teams prospect,,player season team
+published_s0,random,163,5,names named name whose dr,1.0,0.0,1,names named name whose dr,,
+published_s0,named,221,18,music listen track song youtube,0.3333333333333333,0.3333333333333333,4,music listen track song album,,music songs song | music youtube song
+published_s0,named,244,5,music listen song album track,1.0,0.2,1,music listen album track listening,music listen album track listening,
+published_s0,random,269,6,release announced date released announce,1.0,0.0,1,release date released announced launch,,
+published_s0,named,290,7,evidence conspiracy information factual assertions,0.5714285714285714,0.0,2,evidence conspiracy factual assertions cite,,
+published_s0,random,308,11,plane planes bomb aircraft flight,1.0,0.18181818181818182,1,plane bomb aircraft flight buildings,,
+published_s0,named,425,7,delicious food tasty cheese eat,1.0,0.5714285714285714,1,delicious food tasty foods eat,delicious tasty foods food eat,
+published_s0,named,510,5,her herself she realize omg,0.5,0.2,2,she her herself shes thinks,she her shes herself thinks,
+published_s0,random,522,9,vote poll voting polls votes,1.0,0.0,1,vote poll voting polls votes,,
+published_s0,random,523,7,women male gender men female,0.6666666666666666,0.14285714285714285,2,gender women female male men,,women gender sex
+published_s0,random,628,11,price build pcpartpicker cpu performance,1.0,0.0,1,price build cpu pcpartpicker budget,price build cpu budget recommend,
+published_s0,random,644,7,muslim islam religion muslims mohammed,1.0,0.0,1,muslim islam religion muslims mohammed,,
+published_s0,random,659,11,imgur picture jpg image pic,1.0,0.0,1,imgur jpg picture image images,imgur jpg picture images image,
+published_s0,named,766,5,games played pc gameplay fps,1.0,0.2,1,games pc played gameplay fps,games pc fps played gameplay,
+published_s0,named,771,10,oil energy prices price food,1.0,0.5,1,prices oil energy price cost,,
+published_s0,named,774,27,laugh laughed ha laughing funniest,0.43478260869565216,0.14814814814814814,4,laughed laughing laugh ha clap,kill fire die woah burn,asks joke leg
+published_s0,named,798,17,scientific evolution science scientists theory,0.8571428571428571,0.17647058823529413,3,scientific evolution science theory scientists,,science belief scientific | belief conclusion theory
+published_s0,named,811,30,religion christian christianity religious atheist,1.0,0.03333333333333333,1,religion christian religious atheist christianity,atheist atheism christian religion atheists,
+published_s0,named,821,11,pay jobs income money disposable,0.9,0.09090909090909091,2,pay wages afford income money,wages credit cash salary card,income pay wealth
+published_s0,random,825,7,00 одјек łapię članakah čega,0.8571428571428571,0.0,2,00 lmao dumb čo ăștia,lmao 00 čo ăștia începe,lmao ha haha
+published_s0,random,843,6,universe humans science humanity exist,1.0,0.5,1,universe exist science existence reality,,
+published_s0,named,856,15,account money customer order email,0.9166666666666666,0.2,2,account money customer refund payment,,email sent customer
+published_s0,random,917,10,bought buy buying price money,0.5555555555555556,0.1,4,buy bought money investment buying,,price market money | prices price pay
+published_s0,named,949,14,government political country democracy american,1.0,0.0,1,government political country politics democracy,iraq politics government congress rights,
+published_s0,random,978,11,wealth taxes tax rich income,1.0,0.0,1,wealth economy income rich economics,wealth economy income rich economics,
+published_s0,named,983,13,himself political paul interview him,1.0,0.0,1,political himself paul interview him,,
+published_s0,named,991,16,english europe language european canada,1.0,0.4375,1,english european language eastern europe,,
+published_s0,named,999,22,republican voting election party republicans,0.75,0.2727272727272727,2,election voting republican republicans party,,
+published_s0,named,1001,33,president trump obama clinton russia,0.27586206896551724,0.12121212121212122,6,trump obama president news russia,,gt political biden | campaign president trump
+published_s0,named,1002,14,clinton hillary trump campaign bernie,1.0,0.14285714285714285,1,trump clinton hillary campaign sanders,election trump republican democratic voting,
+published_s1,random,11,11,store food beer stores restaurant,1.0,0.0,1,store food beer stores restaurant,,
+published_s1,random,34,5,de eu ser en se,1.0,0.0,1,de eu en se ser,,
+published_s1,random,67,8,ball bounds field feet replay,1.0,0.0,1,ball action message penalty replay,action ball goal message penalty,
+published_s1,named,146,6,team season player players bench,1.0,0.16666666666666666,1,season player team players league,season player team players league,
+published_s1,random,163,5,names named name whose dr,1.0,0.2,1,name character whose nickname picture,name character familiar nickname clue,
+published_s1,named,221,18,music listen track song youtube,0.5,0.1111111111111111,4,music track listen youtube song,music track listen tracks youtube,youtube music song | music listen album | music remix youtube
+published_s1,named,244,5,music listen song album track,1.0,0.0,1,music listen album track songs,music listen album songs track,
+published_s1,random,269,6,release announced date released announce,1.0,0.3333333333333333,1,release date released announced announce,,
+published_s1,named,290,7,evidence conspiracy information factual assertions,1.0,0.0,1,evidence information headline science research,rich headline bless taxes business,
+published_s1,random,308,11,plane planes bomb aircraft flight,1.0,0.09090909090909091,1,plane planes bomb aircraft flight,,
+published_s1,named,425,7,delicious food tasty cheese eat,0.8571428571428571,0.0,2,delicious food tasty eat hungry,delicious food tasty eat hungry,delicious tasty eat
+published_s1,named,510,5,her herself she realize omg,1.0,0.2,1,her she herself shes forgot,she her shes forgot herself,
+published_s1,random,522,9,vote poll voting polls votes,0.5555555555555556,0.0,2,voting vote votes voted poll,,
+published_s1,random,523,7,women male gender men female,1.0,0.0,1,women gender male men female,women gender men male female,
+published_s1,random,628,11,price build pcpartpicker cpu performance,1.0,0.09090909090909091,1,price build budget performance recommend,recommendations price budget recommend build,
+published_s1,random,644,7,muslim islam religion muslims mohammed,1.0,0.0,1,muslim muslims islam religion israel,israel jewish jews holocaust israeli,
+published_s1,random,659,11,imgur picture jpg image pic,1.0,0.09090909090909091,1,imgur picture jpg image design,imgur jpg picture color design,
+published_s1,named,766,5,games played pc gameplay fps,1.0,0.0,1,games played gameplay pc fps,games played gameplay pc fps,
+published_s1,named,771,10,oil energy prices price food,0.5714285714285714,0.3,2,prices oil price energy consumption,,
+published_s1,named,774,27,laugh laughed ha laughing funniest,0.3684210526315789,0.2962962962962963,6,laughing ha laughed clap laugh,rickroll rickrolled rick rickrolling roll,haha ha laughed | sad cry damnit | joke leg monk
+published_s1,named,798,17,scientific evolution science scientists theory,0.9285714285714286,0.17647058823529413,2,scientific science evolution theory scientists,belief conclusion theory science accurate,science religion scientific
+published_s1,named,811,30,religion christian christianity religious atheist,0.4230769230769231,0.13333333333333333,4,religion christian christianity religious christians,,
+published_s1,named,821,11,pay jobs income money disposable,0.7777777777777778,0.18181818181818182,2,pay jobs income money disposable,,
+published_s1,random,825,7,00 одјек łapię članakah čega,0.8571428571428571,0.0,2,00 ไม แบ เเะาปเทำส เหม,,yeff um bullshit
+published_s1,random,843,6,universe humans science humanity exist,0.8333333333333334,0.0,2,universe humans science human reality,human existence universe thoughts perception,theories women iq
+published_s1,named,856,15,account money customer order email,1.0,0.0,1,account money customer order email,scam scammers account transaction moderators,
+published_s1,random,917,10,bought buy buying price money,0.6,0.0,3,bought buy buying memecoins profited,,prices price buy | buy price usd
+published_s1,named,949,14,government political country democracy american,0.8461538461538461,0.07142857142857142,2,government country political democracy american,,
+published_s1,random,978,11,wealth taxes tax rich income,1.0,0.0,1,wealth rich income economy taxes,income economy wealth rich economics,
+published_s1,named,983,13,himself political paul interview him,0.6153846153846154,0.0,2,political himself paul interview ron,,
+published_s1,named,991,16,english europe language european canada,0.45454545454545453,0.3125,3,language accents english british european,,
+published_s1,named,999,22,republican voting election party republicans,0.625,0.2727272727272727,2,republican republicans election voting congress,,
+published_s1,named,1001,33,president trump obama clinton russia,0.48,0.24242424242424243,6,president administration clinton obama trump,president administration clinton cheney congress,campaign trump president | republican president gt | impeachment impeachforpeace memorial
+published_s1,named,1002,14,clinton hillary trump campaign bernie,0.9230769230769231,0.07142857142857142,2,trump clinton hillary campaign sanders,trump democratic election clinton campaign,obama mccain campaign
+n_neighbors=50_s0,random,11,11,store food beer stores restaurant,1.0,0.18181818181818182,1,food store beer restaurant shop,,
+n_neighbors=50_s0,random,34,5,de eu ser en se,1.0,0.4,1,de eu en ser la,de eu en ser la,
+n_neighbors=50_s0,random,67,8,ball bounds field feet replay,1.0,0.0,1,ball replay penalty action field,ball replay penalty action goal,
+n_neighbors=50_s0,named,146,6,team season player players bench,1.0,0.3333333333333333,1,player team season players league,player team season players league,
+n_neighbors=50_s0,random,163,5,names named name whose dr,1.0,0.0,1,name whose nickname names jesus,name nickname whose pope paul,
+n_neighbors=50_s0,named,221,18,music listen track song youtube,0.5714285714285714,0.2222222222222222,4,music listen album track songs,music listen album songs track,music track tracks | song music listening | music song songs
+n_neighbors=50_s0,named,244,5,music listen song album track,1.0,0.0,1,music listen album track songs,music listen songs album track,
+n_neighbors=50_s0,random,269,6,release announced date released announce,1.0,0.3333333333333333,1,release date released announced announce,,
+n_neighbors=50_s0,named,290,7,evidence conspiracy information factual assertions,1.0,0.7142857142857143,1,paragraph headline reprimanded officially english,paragraph headline reprimanded officially english,
+n_neighbors=50_s0,random,308,11,plane planes bomb aircraft flight,1.0,0.2727272727272727,1,plane bomb aircraft flight buildings,,
+n_neighbors=50_s0,named,425,7,delicious food tasty cheese eat,0.75,0.42857142857142855,2,delicious cheese food meal tasty,,delicious tasty eat
+n_neighbors=50_s0,named,510,5,her herself she realize omg,1.0,0.8,1,her she herself thinks shes,her she herself thinks shes,
+n_neighbors=50_s0,random,522,9,vote poll voting polls votes,0.5,0.3333333333333333,2,polls poll polling vote sample,,
+n_neighbors=50_s0,random,523,7,women male gender men female,1.0,0.0,1,women female male men sex,women female men sex male,
+n_neighbors=50_s0,random,628,11,price build pcpartpicker cpu performance,1.0,0.0,1,price build performance pcpartpicker cpu,price build performance recommendations recommend,
+n_neighbors=50_s0,random,644,7,muslim islam religion muslims mohammed,1.0,0.7142857142857143,1,muslims muslim cartoons danish cartoon,,
+n_neighbors=50_s0,random,659,11,imgur picture jpg image pic,1.0,0.09090909090909091,1,picture jpg photo imgur pic,picture photo jpg imgur pic,
+n_neighbors=50_s0,named,766,5,games played pc gameplay fps,1.0,0.2,1,games played gameplay pc graphics,games played gameplay pc graphics,
+n_neighbors=50_s0,named,771,10,oil energy prices price food,,1.0,1,team games her movie food,team games her movie she,
+n_neighbors=50_s0,named,774,27,laugh laughed ha laughing funniest,0.3888888888888889,0.3333333333333333,4,laughed doo dog her woof,,hilarious holy funny
+n_neighbors=50_s0,named,798,17,scientific evolution science scientists theory,1.0,0.17647058823529413,1,scientific evolution science theory scientists,,
+n_neighbors=50_s0,named,811,30,religion christian christianity religious atheist,0.88,0.16666666666666666,2,christian religion atheist christianity religious,atheist religion belief atheism christian,
+n_neighbors=50_s0,named,821,11,pay jobs income money disposable,0.4444444444444444,0.18181818181818182,3,jobs pay income living disposable,jobs wages wage income living,income rich wealth
+n_neighbors=50_s0,random,825,7,00 одјек łapię članakah čega,0.8571428571428571,0.0,2,00 ｄａｇａｋｏｔｏｗａｒｕ пјсе říká őrült,,lmao exact ex
+n_neighbors=50_s0,random,843,6,universe humans science humanity exist,0.6666666666666666,0.5,2,science theory universe conclusion humans,theory science conclusion universe theories,belief conclusion theory
+n_neighbors=50_s0,named,856,15,account money customer order email,0.6,0.3333333333333333,3,account payment refund order money,,email sent customer
+n_neighbors=50_s0,random,917,10,bought buy buying price money,1.0,0.1,1,price buy buying prices bought,price buy prices buying pay,
+n_neighbors=50_s0,named,949,14,government political country democracy american,1.0,0.35714285714285715,1,government political politics country democracy,politics government political war propaganda,
+n_neighbors=50_s0,random,978,11,wealth taxes tax rich income,1.0,0.18181818181818182,1,wealth rich economy taxes income,rich wealth income economy tax,
+n_neighbors=50_s0,named,983,13,himself political paul interview him,1.0,0.8461538461538461,1,himself him behavior hes business,himself behavior him hes business,
+n_neighbors=50_s0,named,991,16,english europe language european canada,1.0,0.0,1,european countries country europe canada,countries european country canada europe,
+n_neighbors=50_s0,named,999,22,republican voting election party republicans,0.6666666666666666,0.45454545454545453,2,republican election republicans voting vote,,republican party republicans
+n_neighbors=50_s0,named,1001,33,president trump obama clinton russia,0.42857142857142855,0.36363636363636365,5,trump president clinton obama news,,candidates romney paul | campaign president trump
+n_neighbors=50_s0,named,1002,14,clinton hillary trump campaign bernie,0.7857142857142857,0.0,3,trump clinton hillary campaign sanders,republican campaign trump mccain democratic,obama president candidate
+min_cluster_size=10_s0,random,11,11,store food beer stores restaurant,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,random,34,5,de eu ser en se,1.0,0.0,1,de eu en ser la,de eu en la ser,
+min_cluster_size=10_s0,random,67,8,ball bounds field feet replay,1.0,0.0,1,ball replay penalty field shot,ball replay player penalty shot,
+min_cluster_size=10_s0,named,146,6,team season player players bench,1.0,0.16666666666666666,1,team season player players league,team season player players league,
+min_cluster_size=10_s0,random,163,5,names named name whose dr,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,named,221,18,music listen track song youtube,0.9090909090909091,0.3888888888888889,2,music listen track song youtube,music track listen songs song,music listen album
+min_cluster_size=10_s0,named,244,5,music listen song album track,1.0,0.2,1,music listen album track listening,music listen album listening track,
+min_cluster_size=10_s0,random,269,6,release announced date released announce,1.0,0.8333333333333334,1,announced date announce announcement april,announced date announce announcement april,
+min_cluster_size=10_s0,named,290,7,evidence conspiracy information factual assertions,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,random,308,11,plane planes bomb aircraft flight,1.0,0.7272727272727273,1,neat practical ground theory brilliant,neat practical ground theory brilliant,
+min_cluster_size=10_s0,named,425,7,delicious food tasty cheese eat,1.0,0.14285714285714285,1,delicious tasty food eat sound,delicious tasty food eat sound,
+min_cluster_size=10_s0,named,510,5,her herself she realize omg,1.0,0.0,1,she her shes herself forgot,she her shes forgot herself,
+min_cluster_size=10_s0,random,522,9,vote poll voting polls votes,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,random,523,7,women male gender men female,1.0,0.0,1,women female men gender sex,women female men sex gender,
+min_cluster_size=10_s0,random,628,11,price build pcpartpicker cpu performance,1.0,0.0,1,price build pcpartpicker cpu budget,price build pcpartpicker cpu 99,
+min_cluster_size=10_s0,random,644,7,muslim islam religion muslims mohammed,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,random,659,11,imgur picture jpg image pic,1.0,0.0,1,imgur jpg picture image pic,jpg imgur picture image images,
+min_cluster_size=10_s0,named,766,5,games played pc gameplay fps,1.0,0.0,1,games played gameplay fps pc,games played gameplay fps pc,
+min_cluster_size=10_s0,named,771,10,oil energy prices price food,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,named,774,27,laugh laughed ha laughing funniest,1.0,0.18518518518518517,1,laughed laugh ha laughing funniest,laughed ha hilarious laugh funniest,
+min_cluster_size=10_s0,named,798,17,scientific evolution science scientists theory,1.0,0.0,1,science theory scientific universe evolution,science theory scientific universe math,
+min_cluster_size=10_s0,named,811,30,religion christian christianity religious atheist,1.0,0.16666666666666666,1,religion religious atheist christian atheism,religion atheist belief religious atheists,
+min_cluster_size=10_s0,named,821,11,pay jobs income money disposable,1.0,0.7272727272727273,1,income pay rich afford money,income pay wealth rich afford,
+min_cluster_size=10_s0,random,825,7,00 одјек łapię članakah čega,,1.0,1,team games movie jpg her,team games movie jpg her,
+min_cluster_size=10_s0,random,843,6,universe humans science humanity exist,1.0,0.16666666666666666,1,science theory scientific universe evolution,science scientific theory evolution universe,
+min_cluster_size=10_s0,named,856,15,account money customer order email,1.0,0.0,1,account customer email money order,email sent customer service account,
+min_cluster_size=10_s0,random,917,10,bought buy buying price money,1.0,0.5,1,price buy bought prices buying,price buy pay prices pricing,
+min_cluster_size=10_s0,named,949,14,government political country democracy american,1.0,0.07142857142857142,1,government country political democracy politics,government country political democracy americans,
+min_cluster_size=10_s0,random,978,11,wealth taxes tax rich income,1.0,0.0,1,wealth income rich economy tax,wealth income rich economy government,
+min_cluster_size=10_s0,named,983,13,himself political paul interview him,1.0,0.8461538461538461,1,president trump obama campaign republican,president trump obama campaign clinton,
+min_cluster_size=10_s0,named,991,16,english europe language european canada,1.0,0.0625,1,european countries country europe canada,european countries country canada europe,
+min_cluster_size=10_s0,named,999,22,republican voting election party republicans,1.0,0.18181818181818182,1,voting republican election party republicans,vote candidate voting republicans republican,
+min_cluster_size=10_s0,named,1001,33,president trump obama clinton russia,1.0,0.21212121212121213,1,president trump obama campaign republican,president campaign trump obama political,
+min_cluster_size=10_s0,named,1002,14,clinton hillary trump campaign bernie,0.9166666666666666,0.14285714285714285,2,trump clinton hillary campaign sanders,election democratic trump votes republican,candidate obama ron
+max_cluster_size=20_s0,random,11,11,store food beer stores restaurant,1.0,0.0,1,store food beer stores restaurant,,
+max_cluster_size=20_s0,random,34,5,de eu ser en se,0.8,0.0,2,de eu en que puede,de en que puede eu,de eu la
+max_cluster_size=20_s0,random,67,8,ball bounds field feet replay,1.0,0.125,1,ball field action 1st pass,ball action 3rd field goal,
+max_cluster_size=20_s0,named,146,6,team season player players bench,0.6,0.16666666666666666,2,team season player teams prospect,,player season team
+max_cluster_size=20_s0,random,163,5,names named name whose dr,1.0,0.0,1,names named name whose dr,,
+max_cluster_size=20_s0,named,221,18,music listen track song youtube,0.3333333333333333,0.3333333333333333,4,music listen track song album,,music songs song | music youtube song
+max_cluster_size=20_s0,named,244,5,music listen song album track,1.0,0.4,1,music listen youtube album songs,music listen youtube album listening,
+max_cluster_size=20_s0,random,269,6,release announced date released announce,1.0,0.0,1,release date released announced launch,,
+max_cluster_size=20_s0,named,290,7,evidence conspiracy information factual assertions,0.5714285714285714,0.0,2,evidence conspiracy factual assertions cite,,
+max_cluster_size=20_s0,random,308,11,plane planes bomb aircraft flight,1.0,0.18181818181818182,1,plane bomb aircraft flight buildings,,
+max_cluster_size=20_s0,named,425,7,delicious food tasty cheese eat,1.0,0.5714285714285714,1,delicious food tasty foods eat,delicious tasty foods food eat,
+max_cluster_size=20_s0,named,510,5,her herself she realize omg,0.5,0.2,2,she her herself shes thinks,she her shes herself thinks,
+max_cluster_size=20_s0,random,522,9,vote poll voting polls votes,1.0,0.0,1,vote poll voting polls votes,,
+max_cluster_size=20_s0,random,523,7,women male gender men female,0.6666666666666666,0.14285714285714285,2,gender women female male men,,women gender sex
+max_cluster_size=20_s0,random,628,11,price build pcpartpicker cpu performance,0.625,0.2727272727272727,2,pcpartpicker price build cpu 99,,
+max_cluster_size=20_s0,random,644,7,muslim islam religion muslims mohammed,1.0,0.0,1,muslim islam religion muslims mohammed,,
+max_cluster_size=20_s0,random,659,11,imgur picture jpg image pic,1.0,0.36363636363636365,1,jpg imgur picture image pic,,
+max_cluster_size=20_s0,named,766,5,games played pc gameplay fps,1.0,0.2,1,games pc played gameplay fps,games pc fps played gameplay,
+max_cluster_size=20_s0,named,771,10,oil energy prices price food,1.0,0.5,1,prices oil energy price cost,,
+max_cluster_size=20_s0,named,774,27,laugh laughed ha laughing funniest,0.43478260869565216,0.14814814814814814,4,laughed laughing laugh ha clap,kill fire die woah burn,asks joke leg
+max_cluster_size=20_s0,named,798,17,scientific evolution science scientists theory,0.8571428571428571,0.17647058823529413,3,scientific evolution science theory scientists,,science belief scientific | belief conclusion theory
+max_cluster_size=20_s0,named,811,30,religion christian christianity religious atheist,0.8333333333333334,0.2,2,christian religion christianity atheist religious,,
+max_cluster_size=20_s0,named,821,11,pay jobs income money disposable,0.9,0.09090909090909091,2,pay wages afford income money,wages credit cash salary card,income pay wealth
+max_cluster_size=20_s0,random,825,7,00 одјек łapię članakah čega,0.8571428571428571,0.0,2,00 lmao dumb čo ăștia,lmao 00 čo ăștia începe,lmao ha haha
+max_cluster_size=20_s0,random,843,6,universe humans science humanity exist,1.0,0.5,1,universe exist science existence reality,,
+max_cluster_size=20_s0,named,856,15,account money customer order email,0.9166666666666666,0.2,2,account money customer refund payment,,email sent customer
+max_cluster_size=20_s0,random,917,10,bought buy buying price money,0.5555555555555556,0.1,4,buy bought money investment buying,,price market money | prices price pay
+max_cluster_size=20_s0,named,949,14,government political country democracy american,0.3333333333333333,0.35714285714285715,3,administration downward instability embarrased represenatives,,
+max_cluster_size=20_s0,random,978,11,wealth taxes tax rich income,1.0,0.09090909090909091,1,wealth rich taxes tax income,rich wealth economy tax income,
+max_cluster_size=20_s0,named,983,13,himself political paul interview him,1.0,0.0,1,political himself paul interview him,,
+max_cluster_size=20_s0,named,991,16,english europe language european canada,1.0,0.4375,1,english european language eastern europe,,
+max_cluster_size=20_s0,named,999,22,republican voting election party republicans,0.75,0.2727272727272727,2,election voting republican republicans party,,
+max_cluster_size=20_s0,named,1001,33,president trump obama clinton russia,0.27586206896551724,0.12121212121212122,6,trump obama president news russia,,gt political biden | campaign president trump
+max_cluster_size=20_s0,named,1002,14,clinton hillary trump campaign bernie,1.0,0.14285714285714285,1,trump clinton hillary campaign sanders,election trump republican democratic voting,
+no_umap_pca50_s0,random,11,11,store food beer stores restaurant,0.5714285714285714,0.36363636363636365,2,store stores beer wine market,,
+no_umap_pca50_s0,random,34,5,de eu ser en se,0.6666666666666666,0.4,2,de en eu se ser,,de eu la
+no_umap_pca50_s0,random,67,8,ball bounds field feet replay,0.75,0.5,2,ball replay penalty ref shot,,ball action 3rd
+no_umap_pca50_s0,named,146,6,team season player players bench,1.0,0.0,1,team player season players league,team player season league players,
+no_umap_pca50_s0,random,163,5,names named name whose dr,1.0,0.6,1,name whose nickname curious middle,,
+no_umap_pca50_s0,named,221,18,music listen track song youtube,1.0,0.2222222222222222,1,music track listen tracks album,music track listen tracks album,
+no_umap_pca50_s0,named,244,5,music listen song album track,1.0,0.0,1,music track listen tracks album,music track listen tracks album,
+no_umap_pca50_s0,random,269,6,release announced date released announce,1.0,0.3333333333333333,1,release date released announced announce,,
+no_umap_pca50_s0,named,290,7,evidence conspiracy information factual assertions,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,random,308,11,plane planes bomb aircraft flight,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,named,425,7,delicious food tasty cheese eat,1.0,0.0,1,delicious tasty food eat sound,delicious tasty food eat sound,
+no_umap_pca50_s0,named,510,5,her herself she realize omg,1.0,0.0,1,her she herself shes thinks,her she herself shes thinks,
+no_umap_pca50_s0,random,522,9,vote poll voting polls votes,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,random,523,7,women male gender men female,1.0,0.14285714285714285,1,women gender sex female men,women sex female gender men,
+no_umap_pca50_s0,random,628,11,price build pcpartpicker cpu performance,1.0,0.6363636363636364,1,price cpu build pcpartpicker gaming,cpu build price pcpartpicker gaming,
+no_umap_pca50_s0,random,644,7,muslim islam religion muslims mohammed,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,random,659,11,imgur picture jpg image pic,1.0,0.5454545454545454,1,picture jpg imgur photo image,picture jpg imgur photo image,
+no_umap_pca50_s0,named,766,5,games played pc gameplay fps,1.0,0.0,1,games played gameplay pc fps,games played gameplay pc fps,
+no_umap_pca50_s0,named,771,10,oil energy prices price food,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,named,774,27,laugh laughed ha laughing funniest,0.6666666666666666,0.7777777777777778,2,laugh she her laughed laughing,,movie favorite lines
+no_umap_pca50_s0,named,798,17,scientific evolution science scientists theory,1.0,0.8823529411764706,1,science universe scientific evidence religion,science universe scientific religion evidence,
+no_umap_pca50_s0,named,811,30,religion christian christianity religious atheist,1.0,0.5,1,religion religious atheism atheist christian,religion atheism atheist religious christian,
+no_umap_pca50_s0,named,821,11,pay jobs income money disposable,0.5714285714285714,0.36363636363636365,2,income money disposable living pay,,income money pay
+no_umap_pca50_s0,random,825,7,00 одјек łapię članakah čega,1.0,0.14285714285714285,1,00 eh okay 05 07,00 eh 05 ಠ_ಠ zubaty,
+no_umap_pca50_s0,random,843,6,universe humans science humanity exist,1.0,0.5,1,humans universe religious science atheist,religion religious humans atheist human,
+no_umap_pca50_s0,named,856,15,account money customer order email,1.0,0.6,1,money purchase account refund payment,,
+no_umap_pca50_s0,random,917,10,bought buy buying price money,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,named,949,14,government political country democracy american,1.0,0.5714285714285714,1,country countries europe government america,country countries europe america government,
+no_umap_pca50_s0,random,978,11,wealth taxes tax rich income,1.0,0.8181818181818182,1,income money pay afford wealth,income money pay afford economics,
+no_umap_pca50_s0,named,983,13,himself political paul interview him,,1.0,1,team jpg games 00 movie,team jpg games 00 movie,
+no_umap_pca50_s0,named,991,16,english europe language european canada,1.0,0.75,1,country countries europe government america,country countries government europe america,
+no_umap_pca50_s0,named,999,22,republican voting election party republicans,1.0,0.9545454545454546,1,trump obama politics president political,obama trump president politics political,
+no_umap_pca50_s0,named,1001,33,president trump obama clinton russia,0.6666666666666666,0.5454545454545454,2,trump president russia obama clinton,,trump politics president
+no_umap_pca50_s0,named,1002,14,clinton hillary trump campaign bernie,1.0,0.42857142857142855,1,trump sanders clinton hillary campaign,trump republican democrats president biden,

@@ -61,52 +61,81 @@ def find_dump(data_path, ym):
     raise FileNotFoundError(f'No dump for {ym} in {data_path}')
 
 
-def stream_rows(file_path, keep=None, limit=None, fields=()):
+B_BODY = b'"body"'
+B_DEL_AUTHOR = b'"author":"[deleted]"'
+B_DEL_AUTHOR_SP = b'"author": "[deleted]"'
+
+
+def iter_lines(f, block=STREAM_BLOCK):
+    """
+    Lines from a decompressing stream, reading in large blocks.
+
+    Not `line, buf = buf.split(b'\\n', 1)` in a loop: that copies the whole
+    remaining buffer per line, which is quadratic in the block size (measured
+    94k -> 13k lines/s at a 4 MiB block). Splitting the block once and carrying
+    the partial tail is linear.
+    """
+    carry = b''
+    for chunk in iter(lambda: f.read(block), b''):
+        lines = (carry + chunk).split(b'\n')
+        carry = lines.pop()
+        for ln in lines:
+            yield ln
+    if carry:
+        yield carry
+
+
+def stream_rows(file_path, keep=None, limit=None, fields=(), strict=False,
+                block=STREAM_BLOCK):
     """
     Yield (row_idx, body[, *fields]) for kept entries, replicating the
-    `1_embed.py` filter exactly. `row_idx` is the embedding row index.
+    `1_embed.py` filter. `row_idx` is the embedding row index.
 
-    keep  : optional set/frozenset of row indices to yield (others are counted
-            but skipped). Streaming stops once the largest wanted index is past.
-    limit : stop after this many kept rows (ignoring `keep`).
-    fields: extra JSON keys to return alongside the body, e.g. ('id',).
+    keep   : optional set of row indices to yield (others are counted but
+             skipped). Stops once the largest wanted index is past.
+    limit  : stop after this many kept rows (ignoring `keep`).
+    fields : extra JSON keys to return with the body, e.g. ('id',).
+    strict : parse every line as JSON to decide keep/skip, exactly as
+             `1_embed.py` does. The default fast path makes that decision on
+             raw bytes and parses JSON only for rows it yields, which is ~8x
+             faster on a full pass (63k vs 8k rows/s) because the discarded
+             99.5% are never parsed.
+
+    The two paths must agree on the kept-row count, or every downstream row
+    index is wrong. `10z_check_filter.py` asserts that on real months, and a
+    full-month run also checks the count against totals.csv.
     """
     stop_after = max(keep) if keep else None
-    byte_buffer = b''
     i = 0
-
-    def handle(line):
-        """Returns a tuple to yield, or None. Advances nothing."""
-        entry = json.loads(line)
-        if 'body' not in entry or entry['author'] == '[deleted]':
-            return False, None
-        body = entry['body']
-        if len(body) > MAX_CHARS:
-            body = body[:MAX_CHARS]
-        if keep is not None and i not in keep:
-            return True, None
-        return True, (body,) + tuple(entry.get(f) for f in fields)
-
     with open_compressed(file_path) as f:
-        for chunk in iter(lambda: f.read(STREAM_BLOCK), b''):
-            byte_buffer += chunk
-            while b'\n' in byte_buffer:
-                line, byte_buffer = byte_buffer.split(b'\n', 1)
-                if not line.strip():
+        for ln in iter_lines(f, block):
+            if not ln.strip():
+                continue
+            if strict:
+                entry = json.loads(ln.decode('utf-8'))
+                if 'body' not in entry or entry['author'] == '[deleted]':
                     continue
-                kept, out = handle(line.decode('utf-8'))
-                if out is not None:
-                    yield (i,) + out
-                if kept:
-                    i += 1
-                    if limit is not None and i >= limit:
-                        return
-                    if stop_after is not None and i > stop_after:
-                        return
-        if byte_buffer.strip():
-            kept, out = handle(byte_buffer.decode('utf-8'))
-            if out is not None:
-                yield (i,) + out
+            else:
+                # cheap keep/skip on raw bytes. Pushshift writes compact JSON,
+                # but accept a space after the key too; a body containing this
+                # text would have escaped quotes, so it cannot false-positive.
+                if B_BODY not in ln:
+                    continue
+                if B_DEL_AUTHOR in ln or B_DEL_AUTHOR_SP in ln:
+                    continue
+                entry = None
+            if keep is None or i in keep:
+                if entry is None:
+                    entry = json.loads(ln.decode('utf-8'))
+                body = entry['body']
+                if len(body) > MAX_CHARS:
+                    body = body[:MAX_CHARS]
+                yield (i, body) + tuple(entry.get(k) for k in fields)
+            i += 1
+            if limit is not None and i >= limit:
+                return
+            if stop_after is not None and i > stop_after:
+                return
 
 
 # ----- stored embeddings -----
@@ -183,11 +212,23 @@ def has_metadata(ym):
     return '2006-01' <= ym <= '2015-10'
 
 
-def load_metadata_ids(save_path, ym, rows=None):
+class MetadataTooLarge(Exception):
+    """metadata2 pickle too big to load within the caller's memory budget."""
+
+
+def load_metadata_ids(save_path, ym, rows=None, max_bytes=None):
     """
     { row_idx: comment_id } for this month, from metadata/ (gzip CSV despite the
     .csv name; 2006-01 … 2012-12) or metadata2/ (pickled lists; 2007-01 …
     2015-10). `rows` restricts the result.
+
+    The two sources differ enormously in cost. The gzip CSV is *streamed*, so
+    memory is O(len(rows)). The pickle is a list of ~n 4-element Python lists
+    and `pickle.load` must materialise all of it: a 2.3 GB file for 2015-10
+    expands to 10-15 GB of objects. Loading one per worker OOM-killed a 62 GB
+    machine on 2026-10-20. `max_bytes` therefore guards the pickle path and
+    raises MetadataTooLarge rather than trying; callers fall back to the
+    nearest-centroid check, which is stronger anyway and needs no metadata.
     """
     import csv
     want = None if rows is None else set(int(r) for r in rows)
@@ -202,12 +243,26 @@ def load_metadata_ids(save_path, ym, rows=None):
                     out[i] = row['id']
         return out
     if os.path.exists(pkl_p):
+        size = os.path.getsize(pkl_p)
+        if max_bytes is not None and size > max_bytes:
+            raise MetadataTooLarge(
+                f'{ym}: metadata2 pickle is {size/1e9:.2f} GB on disk '
+                f'(~{size*6/1e9:.0f} GB once unpickled), over the '
+                f'{max_bytes/1e9:.2f} GB budget')
         with open(pkl_p, 'rb') as f:
             recs = pickle.load(f)
-        for rec in recs:                       # [row_idx, author, id, created_utc]
-            i = int(rec[0])
+        # The row index is the record's POSITION in the list, not rec[0].
+        # rec[0] is inconsistent across eras: for 2007-06 it equals the position,
+        # but for 2015-07 it is the 1M-row batch counter (max 54 for 54.8M rows),
+        # which is what the commented-out NPZ path in 1_embed.py writes
+        # (`df.append([k, ...])`, k = batch count). Keying on rec[0] made the
+        # id check fail for every row of 2015-07/08/10 while nearest-centroid
+        # agreement was >=0.99, i.e. the check was wrong, not the retrieval.
+        # Position-based lookup is verified correct in both eras.
+        for i, rec in enumerate(recs):         # [batch_or_row, author, id, created_utc]
             if want is None or i in want:
                 out[i] = rec[2]
+        del recs
         return out
     raise FileNotFoundError(f'No metadata for {ym}')
 

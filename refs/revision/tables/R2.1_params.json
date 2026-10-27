@@ -1,0 +1,35 @@
+{
+  "seed": 0,
+  "stages": "armB2",
+  "models": [
+    "minilm",
+    "mpnet",
+    "bge"
+  ],
+  "months": "",
+  "k": 50,
+  "n_perm": 100000,
+  "keywords": true,
+  "align_dim": 10,
+  "run_subpath": "mbkm_50",
+  "align_subpath": "align/max_100",
+  "rev_subpath": "rev/ws3",
+  "out_path": "../refs/revision/tables",
+  "save_path": "/mnt/sciclone/proj-ds/geograd/stmorse/reddit",
+  "n_months": 204,
+  "umap": {
+    "n_neighbors": 15,
+    "n_components": 10,
+    "metric": "euclidean",
+    "init": "spectral",
+    "min_dist": 0.1,
+    "spread": 1.0
+  },
+  "hdbscan": {
+    "min_cluster_size": 3,
+    "min_samples": null,
+    "cluster_selection_epsilon": 0.0,
+    "max_cluster_size": 100,
+    "metric": "euclidean"
+  }
+}
