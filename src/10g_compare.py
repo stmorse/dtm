@@ -65,12 +65,10 @@ import ws3_common as wc
 
 MODELS = ['minilm', 'mpnet', 'bge']
 ALL_STAGES = ['agree', 'armB1', 'armB2', 'armA', 'suff']
-# published alignment settings (3_align.py); random_state added per our rules
-UMAP_KW = dict(n_neighbors=15, n_components=10, metric='euclidean',
-               init='spectral', min_dist=0.1, spread=1.0)
-HDBSCAN_KW = dict(min_cluster_size=3, min_samples=None,
-                  cluster_selection_epsilon=0.0, max_cluster_size=100,
-                  metric='euclidean')
+# published alignment settings and WS1's locked statistic now live in
+# ws3_common, shared with 10k_nullrun.py (R2.8).
+UMAP_KW, HDBSCAN_KW = wc.UMAP_KW, wc.HDBSCAN_KW
+align_units, drift_table = wc.align_units, wc.drift_table
 
 
 def months_available(rev, tag='minilm'):
@@ -116,78 +114,6 @@ def load_published(args, months, k):
               f'truncated to these months, so treat the output as a smoke test, '
               f'not the analysis.')
     return C_pub[rows], pub_labels[rows]
-
-
-def align_units(C, seed, align_dim=10):
-    """UMAP + HDBSCAN on a centroid matrix, published settings. -> labels."""
-    import umap
-    from sklearn.cluster import HDBSCAN
-    kw = dict(UMAP_KW, n_components=align_dim, random_state=seed)
-    Cu = umap.UMAP(**kw).fit_transform(C)
-    model = HDBSCAN(**HDBSCAN_KW).fit(Cu)
-    return model.labels_, Cu
-
-
-def grouping_scores(a, b, rng=None, n_null=3):
-    """
-    Compare two groupings of the same units, separating the two things that an
-    all-units ARI silently mixes together.
-
-    HDBSCAN marks ~25-30% of units as noise (-1), and sklearn treats -1 as one
-    cluster of ~2,800 units. Disagreement about *which* units are groupable then
-    dominates the score: all-units ARI reads 0.11 where agreement on the units
-    both groupings do place is ARI 0.52. Both numbers are real, so report both
-    and never the first one alone.
-
-    `*_core` is restricted to units that are non-noise in both. Homogeneity and
-    completeness are not chance-adjusted and run ~0.69 under a size-preserving
-    shuffle at this group count, so the null is returned with them; symmetric
-    values mean boundary reshuffling rather than one grouping refining the other.
-    """
-    m = (a >= 0) & (b >= 0)
-    h, c, _ = hcv(a[m], b[m])
-    noise_a, noise_b = a == -1, b == -1
-    out = {'ari_allunits': ari(a, b), 'ami_allunits': ami(a, b),
-           'n_core': int(m.sum()),
-           'ari_core': ari(a[m], b[m]), 'ami_core': ami(a[m], b[m]),
-           'homogeneity': h, 'completeness': c,
-           'noise_jaccard': float((noise_a & noise_b).sum() /
-                                  max((noise_a | noise_b).sum(), 1)),
-           'splits_per_group_a': float(np.mean(
-               [len(np.unique(b[m][a[m] == g])) for g in np.unique(a[m])])),
-           'splits_per_group_b': float(np.mean(
-               [len(np.unique(a[m][b[m] == g])) for g in np.unique(b[m])]))}
-    if rng is not None and n_null:
-        nh, nc = [], []
-        for _ in range(n_null):
-            bs = rng.permutation(b[m])
-            x, y, _ = hcv(a[m], bs)
-            nh.append(x); nc.append(y)
-        out['homogeneity_null'] = float(np.mean(nh))
-        out['completeness_null'] = float(np.mean(nc))
-    return out
-
-
-def drift_table(C, labels, k, n_perm, seed, min_size=5):
-    """delta/Lambda/p/q per tested group, using WS1's locked call."""
-    rows = []
-    for coi in drift.tested_groups(labels, min_size=min_size):
-        X, per = drift.group_trajectory(C, labels, coi, k=k, within_month='asis')
-        T = X.shape[0]
-        r = max(1, min(5, (T - 2) // 2))
-        lam, p = drift.perm_test(drift.group_basis(X, r), drift.lam_batch,
-                                 n_perm=n_perm, rng=[seed, int(coi)])
-        rows.append({'coi': int(coi), 'T': T, 'r': r,
-                     'first_period': int(per[0]), 'last_period': int(per[-1]),
-                     'delta': float(drift.displacement(X)),
-                     'lam': float(lam), 'p_lam': float(p)})
-    cols = ['coi', 'T', 'r', 'first_period', 'last_period', 'delta', 'lam',
-            'p_lam', 'q_lam']
-    if not rows:                      # no group reached min_size (small subsets)
-        return pd.DataFrame(columns=cols)
-    df = pd.DataFrame(rows)
-    df['q_lam'] = drift.bh_qvalues(df.p_lam.values)
-    return df[cols]
 
 
 # ----------------------------------------------------------------- stages

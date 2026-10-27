@@ -286,3 +286,64 @@ def hf_home(config_general):
     /sciclone/proj-ds/geograd/stmorse/.cache/huggingface (see response.md,
     2026-10-19 infrastructure note)."""
     return os.environ.get('HF_HOME') or config_general['hf_path']
+
+
+# ----- alignment and the drift test -----
+# These two reproduce the published alignment and WS1's locked statistic. They
+# live here so 10g_compare.py (R2.1 arms B2/A) and 10k_nullrun.py (R2.8) share
+# one implementation instead of two that can drift apart. `umap` and `drift` are
+# imported lazily, because 10c/10d/10e import this module inside cm pods where
+# neither is needed.
+#
+# NOTE for R2.8: the published run used min_cluster_size=3, max_cluster_size=100.
+# None of the pre-existing single-month null runs did -- they used
+# min_cluster_size=5 and max_cluster_size=300 (205 for bootstrap/2007-02, and 50
+# for bootstrap/2007-05). Audited 2026-10-27; see response.md under R2.8.
+
+UMAP_KW = dict(n_neighbors=15, n_components=10, metric='euclidean',
+               init='spectral', min_dist=0.1, spread=1.0)
+HDBSCAN_KW = dict(min_cluster_size=3, min_samples=None,
+                  cluster_selection_epsilon=0.0, max_cluster_size=100,
+                  metric='euclidean')
+
+
+def align_units(C, seed, align_dim=10, umap_kw=None, hdbscan_kw=None):
+    """UMAP + HDBSCAN on a centroid matrix, published settings. -> (labels, Cu).
+
+    Seeding UMAP forces it single-threaded; the published run was unseeded.
+    """
+    import umap
+    from sklearn.cluster import HDBSCAN
+    kw = dict(umap_kw or UMAP_KW, n_components=align_dim, random_state=seed)
+    Cu = umap.UMAP(**kw).fit_transform(C)
+    model = HDBSCAN(**(hdbscan_kw or HDBSCAN_KW)).fit(Cu)
+    return model.labels_, Cu
+
+
+def drift_table(C, labels, k, n_perm, seed, min_size=5):
+    """delta/Lambda/p/q per tested group, using WS1's locked call.
+
+    Always returns the full schema, so callers can concatenate even when no
+    group reaches min_size. n_perm should be 1e5: at 1e4 the smallest attainable
+    p (1e-4) exceeds BH's tightest threshold at ~589 tests (8.5e-5).
+    """
+    import pandas as pd
+    import drift
+    rows = []
+    for coi in drift.tested_groups(labels, min_size=min_size):
+        X, per = drift.group_trajectory(C, labels, coi, k=k, within_month='asis')
+        T = X.shape[0]
+        r = max(1, min(5, (T - 2) // 2))
+        lam, p = drift.perm_test(drift.group_basis(X, r), drift.lam_batch,
+                                 n_perm=n_perm, rng=[seed, int(coi)])
+        rows.append({'coi': int(coi), 'T': T, 'r': r,
+                     'first_period': int(per[0]), 'last_period': int(per[-1]),
+                     'delta': float(drift.displacement(X)),
+                     'lam': float(lam), 'p_lam': float(p)})
+    cols = ['coi', 'T', 'r', 'first_period', 'last_period', 'delta', 'lam',
+            'p_lam', 'q_lam']
+    if not rows:
+        return pd.DataFrame(columns=cols)
+    df = pd.DataFrame(rows)
+    df['q_lam'] = drift.bh_qvalues(df.p_lam.values)
+    return df[cols]

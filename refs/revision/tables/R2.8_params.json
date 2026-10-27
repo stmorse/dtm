@@ -1,0 +1,37 @@
+{
+  "seed": 0,
+  "n_resamples": 204,
+  "k": 50,
+  "n_perm": 100000,
+  "align_dim": 10,
+  "batch_size": 10000,
+  "months": [
+    "2007-02",
+    "2010-02",
+    "2015-01",
+    "2017-03",
+    "2020-06",
+    "2021-06"
+  ],
+  "nulls": [
+    "init",
+    "data",
+    "both"
+  ],
+  "ladder": [],
+  "umap": {
+    "n_neighbors": 15,
+    "n_components": 10,
+    "metric": "euclidean",
+    "init": "spectral",
+    "min_dist": 0.1,
+    "spread": 1.0
+  },
+  "hdbscan": {
+    "min_cluster_size": 3,
+    "min_samples": null,
+    "cluster_selection_epsilon": 0.0,
+    "max_cluster_size": 100,
+    "metric": "euclidean"
+  }
+}

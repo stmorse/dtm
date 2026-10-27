@@ -1,0 +1,99 @@
+# WS2 (revision, R2.2): fill the k=90 grid's missing year, 2014.
+#
+# km/km90 has 192 months; 2014 was never run (no cluster_k90_2014 log; the
+# km30/50/70 2014 runs used 2c_cluster.py --model mbkm, see cluster-create.yml).
+# This runs the same, unchanged 2c_cluster.py with the same settings, but writes
+# to rev/ws2/km90 instead of km/km90 so the existing grid is not touched.
+#
+# Four pods, three months each. 2014 embeddings are .npz (~25 GB compressed),
+# which 2c loads whole, hence 80Gi per pod as in cluster-create.yml.
+#
+#   kubectl apply -f manifests/rev-ws2-km90-2014.yml
+#   kubectl get pods -n fais-1 -l job-name=dtm-ws2-km90-2014
+#   tail -f /sciclone/home/stmorse/projects/dtm/logs/ws2_km90_2014_q*.log
+#   kubectl delete job dtm-ws2-km90-2014 -n fais-1        # when done
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dtm-ws2-km90-2014
+  namespace: fais-1
+spec:
+  completionMode: Indexed
+  completions: 4
+  parallelism: 4
+  backoffLimit: 0
+  template:
+    spec:
+      securityContext:
+        runAsUser: 270999
+        runAsGroup: 1132
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - ts4.sciclone.wm.edu
+                - gu07.sciclone.wm.edu
+                - gu08.sciclone.wm.edu
+                - gu09.sciclone.wm.edu
+                - gu10.sciclone.wm.edu
+                - gu11.sciclone.wm.edu
+                - gu12.sciclone.wm.edu
+                - gu13.sciclone.wm.edu
+                - gu14.sciclone.wm.edu
+                - gu15.sciclone.wm.edu
+                - gu16.sciclone.wm.edu
+                - gu17.sciclone.wm.edu
+                - gu18.sciclone.wm.edu
+                - gu19.sciclone.wm.edu
+      containers:
+        - name: km90-2014
+          image: ghcr.io/stmorse/dtm:latest
+          resources:
+            requests:
+              memory: '80Gi'
+              cpu: '12'
+            limits:
+              memory: '80Gi'
+              cpu: '12'
+          command: ['/bin/bash']
+          args:
+            - '-c'
+            - |
+              set -euo pipefail
+              Q=${JOB_COMPLETION_INDEX}
+              M0=$(( Q * 3 + 1 )); M1=$(( M0 + 2 ))
+              cd /sciclone/home/stmorse/projects/dtm/src
+              mkdir -p ../logs
+              echo "quarter $Q: 2014-$M0 .. 2014-$M1"
+              python3 -u 2c_cluster.py \
+                --subpath rev/ws2/km90 \
+                --start-year 2014 --end-year 2014 \
+                --start-month $M0 --end-month $M1 \
+                --n-clusters 90 \
+                --model mbkm \
+                > ../logs/ws2_km90_2014_q${Q}.log 2>&1
+          volumeMounts:
+            - name: home
+              mountPath: /sciclone/home/stmorse
+            - name: data
+              mountPath: /sciclone/data10/twford/reddit/reddit
+            - name: results
+              mountPath: /sciclone/proj-ds/geograd/stmorse
+      volumes:
+        - name: home
+          nfs:
+            server: 128.239.56.166
+            path: /sciclone/home/stmorse
+        - name: data
+          nfs:
+            server: 128.239.56.30
+            path: /sciclone/data10/twford/reddit/reddit
+        - name: results
+          nfs:
+            server: 192.168.59.144  # IB
+            path: /sciclone/proj-ds/geograd/stmorse
